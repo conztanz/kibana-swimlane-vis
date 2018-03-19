@@ -100,6 +100,46 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       attributeOldValue: true
     });
   }
+    $scope.aggregateByCarrierCode = function (buckets) {
+        var carrierCodesMap = {};
+        _.each(buckets, function (bucket) {
+            // extract Carrier Code
+            const currentCarrierCode = bucket.key.split('_')[1].slice(0,2);
+            const currentFlightNumber = bucket.key.split('_')[1].slice(2,bucket.key.length);
+            // if this carrier code doesn't already exist, we add it
+            if(carrierCodesMap[currentCarrierCode] === undefined)
+            {
+                carrierCodesMap[currentCarrierCode] = {};
+                carrierCodesMap[currentCarrierCode].key = currentCarrierCode;
+                carrierCodesMap[currentCarrierCode].doc_count = 1;
+                carrierCodesMap[currentCarrierCode]['3'] = {};
+                carrierCodesMap[currentCarrierCode]['1'] = {};
+                carrierCodesMap[currentCarrierCode]['1'].value = 5.0;
+                carrierCodesMap[currentCarrierCode]['3'].buckets = [];
+
+                // the following fields wouldn't normally exist, be we add them to be shown in tooltip
+                bucket['3'].buckets[0].carrierCode = currentCarrierCode;
+                bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
+                carrierCodesMap[currentCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
+            }
+            // if this carrier code already exists, we add the current bucket into it
+            else
+            {
+                // the following fields wouldn't normally exist, be we add them to be shown in tooltip
+                bucket['3'].buckets[0].carrierCode = currentCarrierCode;
+                bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
+                carrierCodesMap[currentCarrierCode]['3'].buckets.push( bucket['3'].buckets[0]);
+                carrierCodesMap[currentCarrierCode].doc_count ++;
+            }
+        });
+        var result = [];
+        for (var i in carrierCodesMap)
+        {
+            result.push(carrierCodesMap[i])
+        }
+        $scope.agg = result;
+        return result;
+    }
 
   $scope.processAggregations = function (aggregations) {
     const dataByViewBy = {};
@@ -118,8 +158,9 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       if ($scope.vis.aggs.bySchemaName.viewBy !== undefined) {
         // Get the buckets of the viewBy aggregation.
         const viewByAgg = $scope.vis.aggs.bySchemaName.viewBy[0];
-        const viewByBuckets = aggregations[viewByAgg.id].buckets;
-        _.each(viewByBuckets, function (bucket) {
+        let viewByBuckets = aggregations[viewByAgg.id].buckets;
+        viewByBuckets =  $scope.aggregateByCarrierCode(viewByBuckets)
+          _.each(viewByBuckets, function (bucket) {
           // There will be 1 bucket for each 'view by' value.
           const viewByValue = bucket.key;
           aggViewByOrder.push(viewByValue);
@@ -261,7 +302,6 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
     scope._previousHoverPoint = null;
     scope._influencerHoverScope = null;
     scope._resizeChecker = null;
-
     scope.$on('render',function () {
       if (scope.vis.aggs.length !== 0 && scope.vis.aggs.bySchemaName.timeSplit !== undefined
         && _.keys(scope.metricsData).length > 0) {
@@ -299,7 +339,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       });
 
       let laneIds = scope.aggViewByOrder.slice(0);
-      if (scope.vis.params.alphabetSortLaneLabels === 'asc' ||
+        if (scope.vis.params.alphabetSortLaneLabels === 'asc' ||
         scope.vis.params.alphabetSortLaneLabels === 'desc') {
 
         laneIds.sort(function (a, b) {
@@ -550,19 +590,45 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       ctx.rect(x - size, y - 14, size + size, 28);
     }
 
+      /**
+       *
+       * @param pointTime
+       * @param CarrierCodeAgg
+       */
+    function extractSimultaneousFlights(pointTime,carrierCodeAggs) {
+      let simultaneousFlights = [];
+      _.each(carrierCodeAggs, function (carrierCodeAgg) {
+          _.each(carrierCodeAgg['3'].buckets, function (bucket) {
+            if(bucket.key === pointTime) {
+              simultaneousFlights.push(
+                                        { carrierCode : bucket.carrierCode,
+                                          flightNumber : bucket.currentFlightNumber,
+                                          status : bucket['1'].value
+                                        }
+                                      )
+            }
+          })
+      })
+          return simultaneousFlights;
+    }
+
     function showTooltip(item) {
       const pointTime = item.datapoint[0];
       const dataModel = item.series.data[item.dataIndex][2];
       const metricsAgg = scope.vis.aggs.bySchemaName.metric[0];
       const metricLabel = metricsAgg.makeLabel();
       const displayScore = numeral(dataModel.score).format(scope.vis.params.tooltipNumberFormat);
-
+      console.log(dataModel,metricsAgg,metricLabel,displayScore)
       // Display date using dateFormat configured in Kibana settings.
       const formattedDate = moment(pointTime).format(config.get('dateFormat'));
+      // const moment = moment(pointTime);
+      const simultaneousFlights  = extractSimultaneousFlights(pointTime,scope.agg);
+
       let contents = formattedDate + '<br/><hr/>';
-
-      contents += (metricLabel + ': ' + displayScore);
-
+      _.each(simultaneousFlights, function (flight) {
+          // contents += flight.carrierCode + ', '+ flight.flightNumber + flight.status (metricLabel + ': ' + displayScore);
+          contents += 'carrierCode :' +flight.carrierCode + ',flightNumber: '+ flight.flightNumber + ',status: '+ flight.status +'<br/>';
+      })
       const x = item.pageX;
       const y = item.pageY;
       const offset = 5;
