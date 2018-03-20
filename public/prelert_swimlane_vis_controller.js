@@ -552,13 +552,14 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       /**
        *
        * @param pointTime
-       * @param CarrierCodeAgg
+       * @param carrierCodeAggs
+       * @returns {Array}
        */
-    function extractSimultaneousFlights(pointTime,carrierCodeAggs) {
+    function extractSimultaneousFlights(pointTime,carrierCodeAggs,carrierCode) {
       let simultaneousFlights = [];
       _.each(carrierCodeAggs, function (carrierCodeAgg) {
           _.each(carrierCodeAgg['3'].buckets, function (bucket) {
-            if(bucket.key === pointTime) {
+            if(bucket.key === pointTime && bucket.carrierCode === carrierCode) {
               simultaneousFlights.push(
                                         { carrierCode : bucket.carrierCode,
                                           flightNumber : bucket.currentFlightNumber,
@@ -571,23 +572,20 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
           return simultaneousFlights;
     }
 
-    function showTooltip(item) {
+    function showTooltip(item,laneLabel) {
       const pointTime = item.datapoint[0];
       const dataModel = item.series.data[item.dataIndex][2];
       const metricsAgg = scope.vis.aggs.bySchemaName.metric[0];
       const metricLabel = metricsAgg.makeLabel();
       const displayScore = numeral(dataModel.score).format(scope.vis.params.tooltipNumberFormat);
-      console.log(dataModel,metricsAgg,metricLabel,displayScore)
       // Display date using dateFormat configured in Kibana settings.
       const formattedDate = moment(pointTime).format(config.get('dateFormat'));
-      // const moment = moment(pointTime);
-      const simultaneousFlights  = extractSimultaneousFlights(pointTime,scope.agg);
+      const simultaneousFlights  = extractSimultaneousFlights(pointTime,scope.agg,laneLabel);
 
       let contents = formattedDate + '<br/><hr/>';
       _.each(simultaneousFlights, function (flight) {
-          // contents += flight.carrierCode + ', '+ flight.flightNumber + flight.status (metricLabel + ': ' + displayScore);
-          contents += 'carrierCode :' +flight.carrierCode + ',flightNumber: '+ flight.flightNumber + ',status: '+ flight.status +'<br/>';
-      })
+          contents += flight.carrierCode + ' - '+ flight.flightNumber + ' - '+ flight.status +'<br/>';
+      });
       const x = item.pageX;
       const y = item.pageY;
       const offset = 5;
