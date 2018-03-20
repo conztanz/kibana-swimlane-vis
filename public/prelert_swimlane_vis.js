@@ -61,7 +61,7 @@ function PrelertSwimlaneVisProvider(Private) {
         scheduledThresholdColor: '#8bc5f8',
         expectedThresholdColor: '#ffdd00',
         canceledThresholdColor: '#f60eff',
-        receivedOnTimeThresholdColor: '#38fe1e',
+        receivedOnTimeThresholdColor: '#00b800',
         receivedWithDelayThresholdColor: '#fe9c13',
         missingThresholdColor: '#fe5050',
 
