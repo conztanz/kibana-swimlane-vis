@@ -321,11 +321,13 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       // Create a series for each severity color band,
       // plus an 'unknown' series for scores less than the 'low' threshold.
       const colorBands = [scope.vis.params.unknownThresholdColor,
-        scope.vis.params.lowThresholdColor,
-        scope.vis.params.warningThresholdColor,
-        scope.vis.params.minorThresholdColor,
-        scope.vis.params.majorThresholdColor,
-        scope.vis.params.criticalThresholdColor];
+        scope.vis.params.toBeScheduledThresholdColor,
+        scope.vis.params.scheduledThresholdColor,
+        scope.vis.params.expectedThresholdColor,
+        scope.vis.params.canceledThresholdColor,
+        scope.vis.params.receivedOnTimeThresholdColor,
+        scope.vis.params.receivedWithDelayThresholdColor,
+        scope.vis.params.missingThresholdColor];
 
       const seriesLabels = ['unknown','low','warning','minor','major','critical'];
       _.each(colorBands, function (color, i) {
@@ -561,28 +563,14 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
     }
 
+      /**
+       * Originally, this function was used to map ranges of values to a status
+       * But now we have a direct mapping (2 ==> scheduled)  see we just return the same value (the function is useless )
+       * @param value
+       * @returns {*}
+       */
     function getSeriesIndex(value) {
-      // Maps value to the index of the series used for values in that range.
-      // Uses the five colour bands configured in the visualization options,
-      // plus an 'unknown' series for scores less than the 'low' threshold.
-      if (value < scope.vis.params.lowThreshold) {
-        return 0; // 'Unknown' for numbers less than low threshold.
-      }
-      if (value < scope.vis.params.warningThreshold) {
-        return 1;
-      }
-      if (value < scope.vis.params.minorThreshold) {
-        return 2;
-      }
-      if (value < scope.vis.params.majorThreshold) {
-        return 3;
-      }
-      if (value < scope.vis.params.criticalThreshold) {
-        return 4;
-      }
-      if (value >= scope.vis.params.criticalThreshold) {
-        return 5;
-      }
+        return value;
     }
 
     function drawChartSymbol(ctx, x, y, radius) {

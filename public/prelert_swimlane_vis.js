@@ -48,16 +48,23 @@ function PrelertSwimlaneVisProvider(Private) {
       editor : require('plugins/prelert_swimlane_vis/prelert_swimlane_vis_params.html'),
       defaults : {
         interval : { display : 'Auto', val : 'auto' },
-        lowThreshold: 0,
-        warningThreshold: 3,
-        minorThreshold: 25,
-        majorThreshold: 50,
-        criticalThreshold: 75,
-        lowThresholdColor: '#d2e9f7',
-        warningThresholdColor: '#8bc8fb',
-        minorThresholdColor: '#ffdd00',
-        majorThresholdColor: '#ff7e00',
-        criticalThresholdColor: '#fe5050',
+        toBeScheduledThreshold: 1,
+        scheduledThreshold: 2,
+        expectedThreshold: 3,
+        canceledThreshold: 4,
+        receivedOnTimeThreshold: 5,
+        receivedWithDelayThreshold: 6,
+        missingThreshold:7,
+
+
+        toBeScheduledThresholdColor: '#d2e9f7',
+        scheduledThresholdColor: '#8bc5f8',
+        expectedThresholdColor: '#ffdd00',
+        canceledThresholdColor: '#f60eff',
+        receivedOnTimeThresholdColor: '#38fe1e',
+        receivedWithDelayThresholdColor: '#fe9c13',
+        missingThresholdColor: '#fe5050',
+
         tooltipNumberFormat: '0.0',
         showLegend: true,
         alphabetSortLaneLabels: 'off'
