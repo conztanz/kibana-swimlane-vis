@@ -374,7 +374,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
         scope.vis.params.missingThresholdColor];
 
       const seriesLabels = ['unknown','low','warning','minor','major','critical','critical','critical'];
-      _.each(colorBands, function (color, i) {
+      // const seriesLabels = ['To beScheduled','Scheduled','Expected','Canceled','Received On Time','Received With Delay','Missing'];
+        _.each(colorBands, function (color, i) {
         const series = {};
         series.label = seriesLabels[i];
         series.color = color;
