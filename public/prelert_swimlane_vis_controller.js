@@ -624,7 +624,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       const metricLabel = metricsAgg.makeLabel();
       const displayScore = numeral(dataModel.score).format(scope.vis.params.tooltipNumberFormat);
       // Display date using dateFormat configured in Kibana settings.
-      const formattedDate = moment(pointTime).format(config.get('dateFormat'));
+      const formattedDate = moment(pointTime).format('MMMM Do YYYY, HH:mm');
       const simultaneousFlights  = extractFlights(pointTime,scope.agg,scope.additionalSimultaneousFlights,laneLabel);
       let contents = formattedDate + '<br/><hr/>';
       _.each(simultaneousFlights, function (flight) {
