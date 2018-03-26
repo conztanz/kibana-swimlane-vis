@@ -145,6 +145,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 bucket['3'].buckets[0].carrierCode = currentCarrierCode;
                 bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
                 let replaced = false;
+                let old = false;
 
                 // if this new flight happens to be at the same time we another one, we'll only add if it has a new "status code"
                 // if it has a smaller "status code", we'll add it to another list that we'll use later in the tool tip
@@ -161,13 +162,17 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                             carrierCodesMap[currentCarrierCode]['3'].buckets[i] = bucket['3'].buckets[0];
                             replaced = true;
                         }
+                        else
+                        {
+                            old = true;
+                        }
                         // we keep track of all simultaneous flights by adding them to this list (if not already added)
                         $scope.pushIfNotPresent(additionalSimultaneousFlights[currentCarrierCode],current);
                         $scope.pushIfNotPresent(additionalSimultaneousFlights[currentCarrierCode],bucket['3'].buckets[0]);
                     }
                 });
 
-                if(! replaced)
+                if(! replaced && ! old)
                 {
                     carrierCodesMap[currentCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
                 }
