@@ -48,11 +48,13 @@ function PrelertSwimlaneProvider(Private) {
       defaults: {
         interval: { display: 'Auto', val: 'auto' },
         thresholdBands: [
-          { value: 0, color: '#d2e9f7' },
-          { value: 3, color: '#8bc8fb' },
-          { value: 25, color: '#ffdd00' },
-          { value: 50, color: '#ff7e00' },
-          { value: 75, color: '#fe5050' }
+          { value: 1, color: '#d2e9f7' },
+          { value: 2, color: '#8bc5f8' },
+          { value: 3, color: '#ffdd00' },
+          { value: 4, color: '#f60eff' },
+          { value: 5, color: '#00b800' },
+          { value: 6, color: '#fe9c13' },
+          { value: 7, color: '#fe5050' }
         ],
         unknownThresholdColor: '#e6e6e6',
         tooltipNumberFormat: '0.0',
