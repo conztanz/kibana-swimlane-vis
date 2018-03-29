@@ -553,6 +553,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
        *
        * @param pointTime
        * @param carrierCodeAggs
+       * @param carrierCode
        * @returns {Array}
        */
     function extractSimultaneousFlights(pointTime,carrierCodeAggs,carrierCode) {
@@ -584,7 +585,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
       let contents = formattedDate + '<br/><hr/>';
       _.each(simultaneousFlights, function (flight) {
-          contents += flight.carrierCode + ' - '+ flight.flightNumber + ' - '+ flight.status +'<br/>';
+          contents += flight.carrierCode + ' - '+ flight.flightNumber + ' - '+ receptionStatusLabel(flight.status) +'<br/>';
       });
       const x = item.pageX;
       const y = item.pageY;
@@ -608,7 +609,29 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       }
     }
 
-    return {
-      link: link
-    };
-  });
+    /**
+     *
+     * @param status
+     */
+    function receptionStatusLabel(status) {
+        switch (status) {
+            case 1:
+                return "To be scheduled";
+            case 2:
+                return "Scheduled";
+            case 3:
+                return "Expected";
+            case 4:
+                return "Canceled";
+            case 5:
+                return "Received on Time";
+            case 6:
+                return "Received with delay";
+            case 7:
+                return "Missing";
+        }
+    }
+  return {
+    link: link
+  };
+});
