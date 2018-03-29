@@ -95,8 +95,23 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       attributeOldValue: true
     });
   }
+    $scope.pushIfNotPresent = function (list,bucket) {
+        let present = false;
+        _.each(list, function (current)
+        {
+            if(current['1'].value === bucket['1'].value)
+            {
+                present = true;
+            }
+        });
+        if(! present)
+        {
+            list.push(bucket)
+        }
+    };
     $scope.aggregateByCarrierCode = function (buckets) {
-        var carrierCodesMap = {};
+        let carrierCodesMap = {};
+        let additionalSimultaneousFlights = {};
         _.each(buckets, function (bucket) {
             // extract Carrier Code
             const currentCarrierCode = bucket.key.split('_')[1].slice(0,2);
@@ -104,12 +119,13 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             // if this carrier code doesn't already exist, we add it
             if(carrierCodesMap[currentCarrierCode] === undefined)
             {
+                additionalSimultaneousFlights[currentCarrierCode] = [];
                 carrierCodesMap[currentCarrierCode] = {};
                 carrierCodesMap[currentCarrierCode].key = currentCarrierCode;
                 carrierCodesMap[currentCarrierCode].doc_count = 1;
                 carrierCodesMap[currentCarrierCode]['3'] = {};
                 carrierCodesMap[currentCarrierCode]['1'] = {};
-                carrierCodesMap[currentCarrierCode]['1'].value = 5.0;
+                carrierCodesMap[currentCarrierCode]['1'].value = bucket['1'].value;
                 carrierCodesMap[currentCarrierCode]['3'].buckets = [];
 
                 // the following fields wouldn't normally exist, be we add them to be shown in tooltip
@@ -123,18 +139,46 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 // the following fields wouldn't normally exist, be we add them to be shown in tooltip
                 bucket['3'].buckets[0].carrierCode = currentCarrierCode;
                 bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
-                carrierCodesMap[currentCarrierCode]['3'].buckets.push( bucket['3'].buckets[0]);
-                carrierCodesMap[currentCarrierCode].doc_count ++;
+                let replaced = false;
+
+                // if this new flight happens to be at the same time we another one, we'll only add if it has a new "status code"
+                // if it has a smaller "status code", we'll add it to another list that we'll use later in the tool tip
+
+                _.each(carrierCodesMap[currentCarrierCode]['3'].buckets, function (current, i)
+                {
+
+                    // we have a match (a simultaneous flight)
+                    if (current.key === bucket['3'].buckets[0].key)
+                    {
+                        // the new flight has a bigger "status code" ==> we override the already existing one
+                        if (bucket['3'].buckets[0]['1'].value > current['1'].value)
+                        {
+                            carrierCodesMap[currentCarrierCode]['3'].buckets[i] = bucket['3'].buckets[0];
+                            replaced = true;
+                        }
+                        // we keep track of all simultaneous flights by adding them to this list (if not already added)
+                        $scope.pushIfNotPresent(additionalSimultaneousFlights[currentCarrierCode],current);
+                        $scope.pushIfNotPresent(additionalSimultaneousFlights[currentCarrierCode],bucket['3'].buckets[0]);
+                    }
+                });
+
+                if(! replaced)
+                {
+                    carrierCodesMap[currentCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
+                }
+                carrierCodesMap[currentCarrierCode].doc_count++;
             }
         });
-        var result = [];
-        for (var i in carrierCodesMap)
+        let result = [];
+        for (let i in carrierCodesMap)
         {
             result.push(carrierCodesMap[i])
         }
         $scope.agg = result;
+        $scope.additionalSimultaneousFlights = additionalSimultaneousFlights;
         return result;
-    }
+    };
+
 
   $scope.processAggregations = function (aggregations) {
     const dataByViewBy = {};
@@ -556,21 +600,21 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
        * @param carrierCode
        * @returns {Array}
        */
-    function extractSimultaneousFlights(pointTime,carrierCodeAggs,carrierCode) {
+    function extractFlights(pointTime,carrierCodeAggs,additionalSimultaneousFlights,carrierCode) {
       let simultaneousFlights = [];
+      if(additionalSimultaneousFlights[carrierCode] !== undefined)
+      {
+        if(additionalSimultaneousFlights[carrierCode].length > 0 && additionalSimultaneousFlights[carrierCode][0].key === pointTime )
+        return additionalSimultaneousFlights[carrierCode];
+      }
       _.each(carrierCodeAggs, function (carrierCodeAgg) {
           _.each(carrierCodeAgg['3'].buckets, function (bucket) {
             if(bucket.key === pointTime && bucket.carrierCode === carrierCode) {
-              simultaneousFlights.push(
-                                        { carrierCode : bucket.carrierCode,
-                                          flightNumber : bucket.currentFlightNumber,
-                                          status : bucket['1'].value
-                                        }
-                                      )
+              simultaneousFlights.push(bucket);
             }
           })
-      })
-          return simultaneousFlights;
+      });
+      return simultaneousFlights;
     }
 
     function showTooltip(item,laneLabel) {
@@ -581,11 +625,10 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       const displayScore = numeral(dataModel.score).format(scope.vis.params.tooltipNumberFormat);
       // Display date using dateFormat configured in Kibana settings.
       const formattedDate = moment(pointTime).format(config.get('dateFormat'));
-      const simultaneousFlights  = extractSimultaneousFlights(pointTime,scope.agg,laneLabel);
-
+      const simultaneousFlights  = extractFlights(pointTime,scope.agg,scope.additionalSimultaneousFlights,laneLabel);
       let contents = formattedDate + '<br/><hr/>';
       _.each(simultaneousFlights, function (flight) {
-          contents += flight.carrierCode + ' - '+ flight.flightNumber + ' - '+ receptionStatusLabel(flight.status) +'<br/>';
+          contents += flight.carrierCode + ' - '+ flight.currentFlightNumber + ' - '+ receptionStatusLabel(flight['1'].value) +'<br/>';
       });
       const x = item.pageX;
       const y = item.pageY;
