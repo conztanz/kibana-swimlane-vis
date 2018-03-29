@@ -598,7 +598,12 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
         'top': y + offset,
         'left': x + offset
       }).appendTo('body').fadeIn(200);
-
+        // Position the tooltip.
+        const $win = $(window);
+        const winHeight = $win.height();
+        const yOffset = window.pageYOffset;
+        const width = $('.prl-swimlane-vis-tooltip').outerWidth(true);
+        const height = $('.prl-swimlane-vis-tooltip').outerHeight(true);
         $('.prl-swimlane-vis-tooltip').css('left', x + offset + width > $win.width() ? x - offset - width : x + offset);
         $('.prl-swimlane-vis-tooltip').css('top', y + height < winHeight + yOffset ? y : y - height);
 
