@@ -3,7 +3,57 @@
     <div style="float:left; display:inline;">
       <div ng-show="vis.params.showLegend" class="prl-swimlane-legend-container">
         <label class="small">Thresholds:</label>
-        <div class="prl-swimlane-vis-legend">
+        <!--hard coded legend-->
+        <!--TODO: make it dynamic -->
+        <div class="swimlane-legend">
+          <table style="font-size:smaller;color:null">
+            <tbody>
+            <tr>
+              <td class="legendColorBox">
+                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
+                  <div style="width:4px;height:0;border:5px solid #d2e9f7;overflow:hidden"></div>
+                </div>
+              </td>
+              <td class="legendLabel">To be scheduled</td>
+              <td class="legendColorBox">
+                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
+                  <div style="width:4px;height:0;border:5px solid #8bc5f8;overflow:hidden"></div>
+                </div>
+              </td>
+              <td class="legendLabel">Scheduled</td>
+              <td class="legendColorBox">
+                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
+                  <div style="width:4px;height:0;border:5px solid #ffdd00;overflow:hidden"></div>
+                </div>
+              </td>
+              <td class="legendLabel">Expected</td>
+              <td class="legendColorBox">
+                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
+                  <div style="width:4px;height:0;border:5px solid #f60eff;overflow:hidden"></div>
+                </div>
+              </td>
+              <td class="legendLabel">Canceled</td>
+              <td class="legendColorBox">
+                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
+                  <div style="width:4px;height:0;border:5px solid #00b800;overflow:hidden"></div>
+                </div>
+              </td>
+              <td class="legendLabel">Received On Time</td>
+              <td class="legendColorBox">
+                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
+                  <div style="width:4px;height:0;border:5px solid #fe9c13;overflow:hidden"></div>
+                </div>
+              </td>
+              <td class="legendLabel">Received With Delay</td>
+              <td class="legendColorBox">
+                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
+                  <div style="width:4px;height:0;border:5px solid #fe5050;overflow:hidden"></div>
+                </div>
+              </td>
+              <td class="legendLabel">Missing</td>
+            </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
