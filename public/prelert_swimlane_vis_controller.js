@@ -116,6 +116,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             // extract Carrier Code
             const currentCarrierCode = bucket.key.split('_')[1].slice(0,2);
             const currentFlightNumber = bucket.key.split('_')[1].slice(2,bucket.key.length);
+            const departureStation = bucket.key.split('_')[2];
             // if this carrier code doesn't already exist, we add it
             if(carrierCodesMap[currentCarrierCode] === undefined)
             {
@@ -295,9 +296,10 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
     $scope.vis.params.interval = setToInterval;
   }
 })
-  .directive('prlSwimlaneVis', function ($compile, timefilter, config, Private) {
+    .directive('prlSwimlaneVis', function ($compile, timefilter, config, Private,$window) {
 
-    function link(scope, element) {
+
+        function link(scope, element) {
 
       scope._previousHoverPoint = null;
       scope._influencerHoverScope = null;
@@ -432,7 +434,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             backgroundColor: null,
             borderWidth: 1,
             hoverable: true,
-            clickable: false,
+            clickable: true,
             borderColor: '#cccccc',
             color: null
           },
@@ -573,6 +575,22 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
           timefilter.update();
 
         });
+        element.unbind('plotclick');
+        element.bind('plotclick', function (event, ranges,item) {
+              // if the item is null then the user didn't click on a rectangle, it is probably a resize, so we just don't do anything
+              if(item !== null)
+              {
+                  // objectId computation
+                  const pointTime = item.datapoint[0];
+                  const hoverLaneIndex = item.series.data[item.dataIndex][1] - 0.5;
+                  const carrierCode = laneIds[hoverLaneIndex];
+                  const worstFlight  = extractWorstFlight(pointTime,scope.agg,scope.additionalSimultaneousFlights,carrierCode);
+                  const formattedDate = moment(pointTime).format('YYYYMMDD');
+                  const objectId = formattedDate + "_" + carrierCode + worstFlight.currentFlightNumber + "_" + worstFlight.departureStation ;
+                  $window.open('https://'+scope.vis.params.apiPnrBaseUrl+'/#/message?objectId='+objectId, '_blank');
+              }
+          });
+
 
       }
 
@@ -620,6 +638,21 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
           })
       });
       return simultaneousFlights;
+    }
+
+
+    function extractWorstFlight(pointTime, carrierCodeAggs, additionalSimultaneousFlights, carrierCode)
+    {
+        let simultaneousFlights = extractFlights(pointTime, carrierCodeAggs, additionalSimultaneousFlights, carrierCode);
+        let worstFlight = simultaneousFlights [0];
+        _.each(simultaneousFlights, function (flight)
+        {
+            if (flight['1'].value > worstFlight['1'].value)
+            {
+                worstFlight = flight;
+            }
+        });
+        return worstFlight;
     }
 
     function showTooltip(item,laneLabel) {

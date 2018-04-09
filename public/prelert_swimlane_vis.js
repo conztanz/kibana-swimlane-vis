@@ -59,6 +59,7 @@ function PrelertSwimlaneProvider(Private) {
         unknownThresholdColor: '#e6e6e6',
         tooltipNumberFormat: '0.0',
         showLegend: true,
+        apiPnrBaseUrl: "",
         alphabetSortLaneLabels: 'off'
       },
       template,
