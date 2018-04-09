@@ -67,7 +67,8 @@ function PrelertSwimlaneVisProvider(Private) {
 
         tooltipNumberFormat: '0.0',
         showLegend: true,
-        alphabetSortLaneLabels: 'off'
+        apiPnrBaseUrl: "",
+        alphabetSortLaneLabels: 'off',
       },
       intervalOptions: [{ display:'Auto', val:'auto' },
                         { display:'5 minutes', val:'custom', customInterval:'5m' },

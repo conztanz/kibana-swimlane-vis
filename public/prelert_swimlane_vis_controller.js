@@ -121,6 +121,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             // extract Carrier Code
             const currentCarrierCode = bucket.key.split('_')[1].slice(0,2);
             const currentFlightNumber = bucket.key.split('_')[1].slice(2,bucket.key.length);
+            const departureStation = bucket.key.split('_')[2];
             // if this carrier code doesn't already exist, we add it
             if(carrierCodesMap[currentCarrierCode] === undefined)
             {
@@ -136,6 +137,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 // the following fields wouldn't normally exist, be we add them to be shown in tooltip
                 bucket['3'].buckets[0].carrierCode = currentCarrierCode;
                 bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
+                bucket['3'].buckets[0].departureStation = departureStation;
+
                 carrierCodesMap[currentCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
             }
             // if this carrier code already exists, we add the current bucket into it
@@ -344,7 +347,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
   $scope.prelertLogoSrc = require('plugins/prelert_swimlane_vis/prelert_logo_24.png');
 
 })
-.directive('prlSwimlaneVis', function ($compile, timefilter, config, Private) {
+.directive('prlSwimlaneVis', function ($compile, timefilter, config, Private,$window) {
 
   function link(scope, element) {
 
@@ -470,7 +473,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
           backgroundColor: null,
           borderWidth: 1,
           hoverable: true,
-          clickable: false,
+          clickable: true,
           borderColor: '#cccccc',
           color: null,
         },
@@ -610,8 +613,25 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
         timefilter.time.to = moment.utc(zoomTo);
         timefilter.time.mode = 'absolute';
       });
+        element.unbind('plotclick');
+        element.bind('plotclick', function (event, ranges,item) {
+            // if the item is null then the user didn't click on a rectangle, it is probably a resize, so we just don't do anything
+            if(item !== null)
+            {
+                // objectId computation
+                const pointTime = item.datapoint[0];
+                const hoverLaneIndex = item.series.data[item.dataIndex][1] - 0.5;
+                const carrierCode = laneIds[hoverLaneIndex];
+                const worstFlight  = extractWorstFlight(pointTime,scope.agg,scope.additionalSimultaneousFlights,carrierCode);
+                const formattedDate = moment(pointTime).format('YYYYMMDD');
+                const objectId = formattedDate + "_" + carrierCode + worstFlight.currentFlightNumber + "_" + worstFlight.departureStation ;
+                $window.open('https://'+scope.vis.params.apiPnrBaseUrl+'/#/message?objectId='+objectId, '_blank');
+            }
+        });
 
-    }
+
+        }
+
 
       /**
        * Originally, this function was used to map ranges of values to a status
@@ -652,41 +672,61 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
       return simultaneousFlights;
     }
 
-    function showTooltip(item,laneLabel) {
-      const pointTime = item.datapoint[0];
-      const dataModel = item.series.data[item.dataIndex][2];
-      const metricsAgg = scope.vis.aggs.bySchemaName.metric[0];
-      const metricLabel = metricsAgg.makeLabel();
-      const displayScore = numeral(dataModel.score).format(scope.vis.params.tooltipNumberFormat);
-      // Display date using dateFormat configured in Kibana settings.
-      const formattedDate = moment(pointTime).format('MMMM Do YYYY, HH:mm');
-      const simultaneousFlights  = extractFlights(pointTime,scope.agg,scope.additionalSimultaneousFlights,laneLabel);
-      let contents = formattedDate + '<br/><hr/>';
-      _.each(simultaneousFlights, function (flight) {
-          contents += flight.carrierCode + ' - '+ flight.currentFlightNumber + ' - '+ receptionStatusLabel(flight['1'].value) +'<br/>';
-      });
-      const x = item.pageX;
-      const y = item.pageY;
-      const offset = 5;
-      $('<div class="prl-swimlane-vis-tooltip">' + contents + '</div>').css({
-        'position': 'absolute',
-        'display': 'none',
-        'z-index': 1,
-        'top': y + offset,
-        'left': x + offset
-      }).appendTo('body').fadeIn(200);
+      /**
+       *
+       * @param pointTime
+       * @param carrierCodeAggs
+       * @param additionalSimultaneousFlights
+       * @param carrierCode
+       */
+      function extractWorstFlight(pointTime, carrierCodeAggs, additionalSimultaneousFlights, carrierCode) {
+          let simultaneousFlights = extractFlights(pointTime, carrierCodeAggs, additionalSimultaneousFlights, carrierCode);
+          let worstFlight = simultaneousFlights [0];
+          _.each(simultaneousFlights, function (flight) {
+              if (flight['1'].value > worstFlight['1'].value)
+              {
+                  worstFlight = flight;
+              }
+          });
+          return worstFlight;
+      }
 
-      // Position the tooltip.
-      const $win = $(window);
-      const winHeight = $win.height();
-      const yOffset = window.pageYOffset;
-      const width = $('.prl-swimlane-vis-tooltip').outerWidth(true);
-      const height = $('.prl-swimlane-vis-tooltip').outerHeight(true);
 
-      $('.prl-swimlane-vis-tooltip').css('left', x + offset + width > $win.width() ? x - offset - width : x + offset);
-      $('.prl-swimlane-vis-tooltip').css('top', y + height < winHeight + yOffset ? y : y - height);
+      function showTooltip(item, laneLabel) {
+          const pointTime = item.datapoint[0];
+          const dataModel = item.series.data[item.dataIndex][2];
+          const metricsAgg = scope.vis.aggs.bySchemaName.metric[0];
+          const metricLabel = metricsAgg.makeLabel();
+          const displayScore = numeral(dataModel.score).format(scope.vis.params.tooltipNumberFormat);
+          // Display date using dateFormat configured in Kibana settings.
+          const formattedDate = moment(pointTime).format('MMMM Do YYYY, HH:mm');
+          const simultaneousFlights = extractFlights(pointTime, scope.agg, scope.additionalSimultaneousFlights, laneLabel);
+          let contents = formattedDate + '<br/><hr/>';
+          _.each(simultaneousFlights, function (flight) {
+              contents += flight.carrierCode + ' - ' + flight.currentFlightNumber + ' - ' + receptionStatusLabel(flight['1'].value) + '<br/>';
+          });
+          const x = item.pageX;
+          const y = item.pageY;
+          const offset = 5;
+          $('<div class="prl-swimlane-vis-tooltip">' + contents + '</div>').css({
+              'position': 'absolute',
+              'display': 'none',
+              'z-index': 1,
+              'top': y + offset,
+              'left': x + offset
+          }).appendTo('body').fadeIn(200);
 
-    }
+          // Position the tooltip.
+          const $win = $(window);
+          const winHeight = $win.height();
+          const yOffset = window.pageYOffset;
+          const width = $('.prl-swimlane-vis-tooltip').outerWidth(true);
+          const height = $('.prl-swimlane-vis-tooltip').outerHeight(true);
+
+          $('.prl-swimlane-vis-tooltip').css('left', x + offset + width > $win.width() ? x - offset - width : x + offset);
+          $('.prl-swimlane-vis-tooltip').css('top', y + height < winHeight + yOffset ? y : y - height);
+
+      }
   }
 
     /**
