@@ -132,14 +132,15 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 // the following fields wouldn't normally exist, be we add them to be shown in tooltip
                 bucket['3'].buckets[0].carrierCode = currentCarrierCode;
                 bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
+                bucket['3'].buckets[0].departureStation = departureStation;
                 carrierCodesMap[currentCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
             }
             // if this carrier code already exists, we add the current bucket into it
             else
             {
-                // the following fields wouldn't normally exist, be we add them to be shown in tooltip
                 bucket['3'].buckets[0].carrierCode = currentCarrierCode;
                 bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
+                carrierCodesMap[currentCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
                 let replaced = false;
                 let old = false;
 
