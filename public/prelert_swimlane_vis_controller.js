@@ -140,7 +140,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             {
                 bucket['3'].buckets[0].carrierCode = currentCarrierCode;
                 bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
-                carrierCodesMap[currentCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
+                bucket['3'].buckets[0].departureStation = departureStation;
                 let replaced = false;
                 let old = false;
 
