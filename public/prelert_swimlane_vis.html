@@ -1,8 +1,14 @@
 <div class="prl-swimlane-vis" ng-controller="PrelertSwimlaneVisController">
   <div style="display:inline-block; width: 100%;">
     <div style="float:left; display:inline;">
+      <kbn-info
+              ng-show="vis.params.interval.scaled"
+              placement="right"
+              class="text-warning"
+              info="This interval creates {{ vis.params.interval.scale > 1 ? 'buckets that are too large' : 'too many buckets' }} to show in the selected time range, so it has been scaled to {{ vis.params.interval.description }}">
+      </kbn-info>
       <div ng-show="vis.params.showLegend" class="prl-swimlane-legend-container">
-        <label class="small">Thresholds:</label>
+        <!--<label class="small">Thresholds:</label>-->
         <!--hard coded legend-->
         <!--TODO: make it dynamic -->
         <div class="swimlane-legend">
@@ -11,34 +17,10 @@
             <tr>
               <td class="legendColorBox">
                 <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
-                  <div style="width:4px;height:0;border:5px solid #d2e9f7;overflow:hidden"></div>
-                </div>
-              </td>
-              <td class="legendLabel">To be scheduled</td>
-              <td class="legendColorBox">
-                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
-                  <div style="width:4px;height:0;border:5px solid #8bc5f8;overflow:hidden"></div>
-                </div>
-              </td>
-              <td class="legendLabel">Scheduled</td>
-              <td class="legendColorBox">
-                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
-                  <div style="width:4px;height:0;border:5px solid #ffdd00;overflow:hidden"></div>
-                </div>
-              </td>
-              <td class="legendLabel">Expected</td>
-              <td class="legendColorBox">
-                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
-                  <div style="width:4px;height:0;border:5px solid #f60eff;overflow:hidden"></div>
-                </div>
-              </td>
-              <td class="legendLabel">Canceled</td>
-              <td class="legendColorBox">
-                <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
                   <div style="width:4px;height:0;border:5px solid #00b800;overflow:hidden"></div>
                 </div>
               </td>
-              <td class="legendLabel">Received on time</td>
+              <td class="legendLabel">No issues</td>
               <td class="legendColorBox">
                 <div style="border:1px solid rgba(255, 255, 255, 0);;padding:1px">
                   <div style="width:4px;height:0;border:5px solid #fe9c13;overflow:hidden"></div>
