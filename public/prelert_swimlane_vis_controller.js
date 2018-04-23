@@ -722,13 +722,13 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 case 2:
                     return "Scheduled";
                 case 3:
-                    return "Expected";
+                    return "Cancelled";
                 case 4:
-                    return "Canceled";
-                case 5:
                     return "Received on Time";
+                case 5:
+                    return "Expected";
                 case 6:
-                    return "Received with delay";
+                    return "Received delayed";
                 case 7:
                     return "Missing";
             }
