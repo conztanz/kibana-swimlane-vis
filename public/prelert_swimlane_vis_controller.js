@@ -114,9 +114,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
         let additionalSimultaneousFlights = {};
         _.each(buckets, function (bucket) {
             // extract Carrier Code
-            const currentCarrierCode = bucket.key.split('_')[1].slice(0,2);
-            const currentFlightNumber = bucket.key.split('_')[1].slice(2,bucket.key.length);
-            const departureStation = bucket.key.split('_')[2];
+            const icaoObjectId = bucket.key.split('/')[0];
+            const iataObjectId = bucket.key.split('/')[1];
+            const currentCarrierCode = icaoObjectId.split('_')[1].slice(0,3);
+            const currentFlightNumber = icaoObjectId.split('_')[1].slice(3,bucket.key.length);
+            const departureStation = icaoObjectId.split('_')[2];
             // if this carrier code doesn't already exist, we add it
             if(carrierCodesMap[currentCarrierCode] === undefined)
             {
@@ -131,6 +133,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
                 // the following fields wouldn't normally exist, be we add them to be shown in tooltip
                 bucket['3'].buckets[0].carrierCode = currentCarrierCode;
+                bucket['3'].buckets[0].iataObjectId = iataObjectId;
                 bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
                 bucket['3'].buckets[0].departureStation = departureStation;
                 carrierCodesMap[currentCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
@@ -141,6 +144,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 bucket['3'].buckets[0].carrierCode = currentCarrierCode;
                 bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
                 bucket['3'].buckets[0].departureStation = departureStation;
+                bucket['3'].buckets[0].iataObjectId = iataObjectId;
+
                 let replaced = false;
                 let old = false;
 
@@ -600,14 +605,18 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     // if the item is null then the user didn't click on a rectangle, it is probably a resize, so we just don't do anything
                     if(item !== null)
                     {
-                        // objectId computation
+                        // objectId extraction
                         const pointTime = item.datapoint[0];
                         const hoverLaneIndex = item.series.data[item.dataIndex][1] - 0.5;
                         const carrierCode = laneIds[hoverLaneIndex];
                         const worstFlight  = extractWorstFlight(pointTime,scope.agg,scope.additionalSimultaneousFlights,carrierCode);
-                        const formattedDate = moment(pointTime).format('YYYYMMDD');
-                        const objectId = formattedDate + "_" + carrierCode + worstFlight.currentFlightNumber + "_" + worstFlight.departureStation ;
-                        $window.open(scope.vis.params.apiPnrBaseUrl+'/#/message?objectId='+objectId, '_blank');
+                        // const objectId = formattedDate + "_" + carrierCode + worstFlight.currentFlightNumber + "_" + worstFlight.departureStation ;
+                        const objectId = worstFlight.iataObjectId ;
+                        // const formattedDate = moment(pointTime).format('YYYYMMDD');
+                        if(objectId !== 'null')
+                        {
+                            $window.open(scope.vis.params.apiPnrBaseUrl+'/#/message?objectId='+objectId, '_blank');
+                        }
                     }
                 });
 
