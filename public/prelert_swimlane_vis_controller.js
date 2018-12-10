@@ -24,8 +24,8 @@ import moment from 'moment';
 import numeral from 'numeral';
 import $ from 'ui/flot-charts';
 import logo from './prelert_logo_24.png';
-import { ResizeCheckerProvider } from 'ui/resize_checker';
-import { uiModules } from 'ui/modules';
+import {ResizeCheckerProvider} from 'ui/resize_checker';
+import {uiModules} from 'ui/modules';
 
 const module = uiModules.get('prelert_swimlane_vis/prelert_swimlane_vis', ['kibana']);
 module.controller('PrelertSwimlaneVisController', function ($scope, courier, $timeout) {
@@ -93,22 +93,19 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             attributeOldValue: true
         });
     }
-    $scope.pushIfNotPresent = function (list,bucket) {
+    $scope.pushIfNotPresent = function (list, bucket) {
         let present = false;
-        _.each(list, function (current)
-        {
-            if(current['1'].value === bucket['1'].value)
-            {
+        _.each(list, function (current) {
+            if (current['1'].value === bucket['1'].value) {
                 present = true;
             }
         });
-        if(! present)
-        {
+        if (!present) {
             list.push(bucket);
         }
     };
 
-    $scope.buildLineLabel = function (iataCarrierCode, icaoCode, carrierName){
+    $scope.buildLineLabel = function (iataCarrierCode, icaoCode, carrierName) {
         return carrierName + '<br>(' + icaoCode
             + (iataCarrierCode !== undefined ? '/' + iataCarrierCode : '')
             + ')';
@@ -129,26 +126,31 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             const icaoObjectId = splitBucketKey[0];
             const iataObjectId = splitBucketKey[1];
             let carrierName;
-            if(splitBucketKey.length > 2) {
+            if (splitBucketKey.length > 2) {
                 carrierName = splitBucketKey[2];
             }
             let iataCarrierCode;
-            if(splitBucketKey.length > 3) {
+            if (splitBucketKey.length > 3) {
                 iataCarrierCode = splitBucketKey[3];
             }
-            const currentIcaoCarrierCode = icaoObjectId.split('_')[1].slice(0,3);
+
+            let routing;
+            if (splitBucketKey.length > 4) {
+                routing = splitBucketKey[4];
+            }
+
+            const currentIcaoCarrierCode = icaoObjectId.split('_')[1].slice(0, 3);
             const currentFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
             const departureStation = icaoObjectId.split('_')[2];
 
-            if(!$scope.lineLabels.has(currentIcaoCarrierCode)) {
+            if (!$scope.lineLabels.has(currentIcaoCarrierCode)) {
                 $scope.lineLabels.set(currentIcaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, currentIcaoCarrierCode, carrierName));
             }
 
             let displayKey = $scope.lineLabels.get(currentIcaoCarrierCode);
 
             // if this carrier code doesn't already exist, we add it
-            if(carrierCodesMap[currentIcaoCarrierCode] === undefined)
-            {
+            if (carrierCodesMap[currentIcaoCarrierCode] === undefined) {
                 additionalSimultaneousFlights[displayKey] = [];
                 carrierCodesMap[currentIcaoCarrierCode] = {};
                 carrierCodesMap[currentIcaoCarrierCode].key = displayKey;
@@ -165,17 +167,18 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 bucket['3'].buckets[0].departureStation = departureStation;
                 bucket['3'].buckets[0].displayKey = displayKey;
                 bucket['3'].buckets[0].iataCarrierCode = iataCarrierCode;
+                bucket['3'].buckets[0].routing = routing;
                 carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
             }
             // if this carrier code already exists, we add the current bucket into it
-            else
-            {
+            else {
                 bucket['3'].buckets[0].carrierCode = currentIcaoCarrierCode;
                 bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
                 bucket['3'].buckets[0].departureStation = departureStation;
                 bucket['3'].buckets[0].iataObjectId = iataObjectId;
                 bucket['3'].buckets[0].displayKey = displayKey;
                 bucket['3'].buckets[0].iataCarrierCode = iataCarrierCode;
+                bucket['3'].buckets[0].routing = routing;
 
                 carrierCodesMap[currentIcaoCarrierCode].key = displayKey;
 
@@ -184,38 +187,31 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
                 // if this new flight happens to be at the same time as another one, we'll only add if it has a new "status code"
                 // if it has a smaller "status code", we'll add it to another list that we'll use later in the tool tip
-                _.each(carrierCodesMap[currentIcaoCarrierCode]['3'].buckets, function (current, i)
-                {
+                _.each(carrierCodesMap[currentIcaoCarrierCode]['3'].buckets, function (current, i) {
 
                     // we have a match (a simultaneous flight)
-                    if (current.key === bucket['3'].buckets[0].key)
-                    {
+                    if (current.key === bucket['3'].buckets[0].key) {
                         // the new flight has a bigger "status code" ==> we override the already existing one
-                        if (bucket['3'].buckets[0]['1'].value > current['1'].value)
-                        {
+                        if (bucket['3'].buckets[0]['1'].value > current['1'].value) {
                             carrierCodesMap[currentIcaoCarrierCode]['3'].buckets[i] = bucket['3'].buckets[0];
                             replaced = true;
-                        }
-                        else
-                        {
+                        } else {
                             old = true;
                         }
                         // we keep track of all simultaneous flights by adding them to this list (if not already added)
-                        $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey],current);
-                        $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey],bucket['3'].buckets[0]);
+                        $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey], current);
+                        $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey], bucket['3'].buckets[0]);
                     }
                 });
 
-                if(! replaced && ! old)
-                {
+                if (!replaced && !old) {
                     carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
                 }
                 carrierCodesMap[currentIcaoCarrierCode].doc_count++;
             }
         });
         let result = [];
-        for (let i in carrierCodesMap)
-        {
+        for (let i in carrierCodesMap) {
             result.push(carrierCodesMap[i]);
         }
         $scope.agg = result;
@@ -241,7 +237,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 // Get the buckets of the viewBy aggregation.
                 const viewByAgg = $scope.vis.aggs.bySchemaName.viewBy[0];
                 let viewByBuckets = aggregations[viewByAgg.id].buckets;
-                viewByBuckets =  $scope.aggregateByCarrierCode(viewByBuckets);
+                viewByBuckets = $scope.aggregateByCarrierCode(viewByBuckets);
                 _.each(viewByBuckets, function (bucket) {
                     // There will be 1 bucket for each 'view by' value.
                     const viewByValue = bucket.key.toString();
@@ -266,7 +262,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 const timesForViewBy = {};
                 const buckets = aggregations[timeAggId].buckets;
                 _.each(buckets, (bucket) => {
-                    timesForViewBy[bucket.key] = { value: metricsAgg.getValue(bucket) };
+                    timesForViewBy[bucket.key] = {value: metricsAgg.getValue(bucket)};
                 });
 
                 // Use the metric label as the swimlane label.
@@ -303,9 +299,9 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             aggInterval = _.get(timeAgg, ['params', 'customInterval']);
         }
 
-        let setToInterval = _.find($scope.vis.type.visConfig.intervalOptions, { val: aggInterval });
+        let setToInterval = _.find($scope.vis.type.visConfig.intervalOptions, {val: aggInterval});
         if (!setToInterval) {
-            setToInterval = _.find($scope.vis.type.visConfig.intervalOptions, { customInterval: aggInterval });
+            setToInterval = _.find($scope.vis.type.visConfig.intervalOptions, {customInterval: aggInterval});
         }
         if (!setToInterval) {
             // e.g. if running inside the Kibana Visualization tab will need to add an extra option in.
@@ -336,6 +332,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
     .directive('prlSwimlaneVis', function ($compile, timefilter, config, Private, $window, $interval) {
 
         let crossairRefreshTimer = null;
+
         function link(scope, element) {
 
             scope._previousHoverPoint = null;
@@ -370,7 +367,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                             show: true,
                             radius: 5,
                             symbol: drawChartSymbol,
-                            lineWidth: 1 },
+                            lineWidth: 1
+                        },
                         data: [],
                         shadowSize: 0,
                         thresholdValue: thresholdBand.value
@@ -386,7 +384,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         show: true,
                         radius: 5,
                         symbol: drawChartSymbol,
-                        lineWidth: 1 },
+                        lineWidth: 1
+                    },
                     data: [],
                     shadowSize: 0
                 });
@@ -397,7 +396,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
                     laneIds.sort((a, b) => {
                         // Use String.localeCompare with the numeric option enabled.
-                        return a.localeCompare(b, undefined, { numeric: true });
+                        return a.localeCompare(b, undefined, {numeric: true});
                     });
 
                     if (scope.vis.params.alphabetSortLaneLabels === 'asc') {
@@ -422,7 +421,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         pointData[0] = moment(Number(time));
                         pointData[1] = laneIndex + 0.5;
                         // Store the score in an additional object property for each point.
-                        pointData[2] = { score: value };
+                        pointData[2] = {score: value};
 
                         const seriesIndex = getSeriesIndex(value);
                         allSeries[seriesIndex].data.push(pointData);
@@ -518,14 +517,14 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         yaxisMarking = {};
                         yaxisMarking.from = i;
                         yaxisMarking.to = i + 0.03;
-                        options.grid.markings.push({ yaxis: yaxisMarking, color: '#d5d5d5' });
+                        options.grid.markings.push({yaxis: yaxisMarking, color: '#d5d5d5'});
                     }
 
                     if (i % 2 !== 0) {
                         yaxisMarking = {};
                         yaxisMarking.from = i + 0.03;
                         yaxisMarking.to = i + 1;
-                        options.grid.markings.push({ yaxis: yaxisMarking, color: alternateLaneColor });
+                        options.grid.markings.push({yaxis: yaxisMarking, color: alternateLaneColor});
                     }
                 });
 
@@ -537,22 +536,24 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 const plot = $.plot(element, allSeries, options);
 
                 // Draw crosshair
-                const setNowCrosshair = function(intervalIndicator) {
+                const setNowCrosshair = function (intervalIndicator) {
                     const now = new Date();
-                    console.log( "setNowCrosshair : update at " + now);
-                    plot.lockCrosshair( { x: now.getTime() } );
-                    if( !intervalIndicator ) {
-                        if( crossairRefreshTimer != null ) {
-                            console.log( "setNowCrosshair : cancel previous timer" );
-                            $interval.cancel( crossairRefreshTimer );
+                    console.log("setNowCrosshair : update at " + now);
+                    plot.lockCrosshair({x: now.getTime()});
+                    if (!intervalIndicator) {
+                        if (crossairRefreshTimer != null) {
+                            console.log("setNowCrosshair : cancel previous timer");
+                            $interval.cancel(crossairRefreshTimer);
                         }
-                        const elapseInMinutes = ( plot.getAxes().xaxis.max - plot.getAxes().xaxis.min ) / ( 1000 * 60 );
-                        const intervalInMinutes = elapseInMinutes > 120 ? ( elapseInMinutes > 240 ? 5 : 1 ) : ( elapseInMinutes < 60 ? 0.25 : 0.5 );
-                        console.log( "setNowCrosshair : interval in minutes is " + intervalInMinutes );
-                        crossairRefreshTimer = $interval( function() { setNowCrosshair( true ); }, 1000 * 60 * intervalInMinutes );
+                        const elapseInMinutes = (plot.getAxes().xaxis.max - plot.getAxes().xaxis.min) / (1000 * 60);
+                        const intervalInMinutes = elapseInMinutes > 120 ? (elapseInMinutes > 240 ? 5 : 1) : (elapseInMinutes < 60 ? 0.25 : 0.5);
+                        console.log("setNowCrosshair : interval in minutes is " + intervalInMinutes);
+                        crossairRefreshTimer = $interval(function () {
+                            setNowCrosshair(true);
+                        }, 1000 * 60 * intervalInMinutes);
                     }
                 };
-                setNowCrosshair( false );
+                setNowCrosshair(false);
                 // Redraw the chart when the container is resized.
                 // Resize action is the same as that performed in the jquery.flot.resize plugin,
                 // but use the Kibana ResizeCheckerProvider for simplicity and because the
@@ -602,10 +603,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
                             let currentIcaoCarrierCode;
                             let icaoCodes = scope.lineLabels.keys();
-                            let keys = Array.from( icaoCodes ).reverse();
+                            // Reverse the keys as the lanes are rendered bottom up.
+                            let keys = Array.from(icaoCodes).reverse();
 
-                            for(var lineHeaderIndex = 0; lineHeaderIndex<keys.length; lineHeaderIndex++) {
-                                if(lineHeaderIndex === hoverLaneIndex) {
+                            for (var lineHeaderIndex = 0; lineHeaderIndex < keys.length; lineHeaderIndex++) {
+                                if (lineHeaderIndex === hoverLaneIndex) {
                                     currentIcaoCarrierCode = keys[lineHeaderIndex];
                                     break;
                                 }
@@ -617,6 +619,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         }
                     } else {
                         element.removeClass('prl-swimlane-vis-point-over ');
+                        // $('.prl-swimlane-vis-tooltip').fadeOut(400);
                         $('.prl-swimlane-vis-tooltip').remove();
                         scope._previousHoverPoint = null;
                         if (scope._influencerHoverScope) {
@@ -646,21 +649,19 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     timefilter.update();
                 });
                 element.unbind('plotclick');
-                element.bind('plotclick', function (event, ranges,item) {
+                element.bind('plotclick', function (event, ranges, item) {
                     // if the item is null then the user didn't click on a rectangle, it is probably a resize, so we just don't do anything
-                    if(item !== null)
-                    {
+                    if (item !== null) {
                         // objectId extraction
                         const pointTime = item.datapoint[0];
                         const hoverLaneIndex = item.series.data[item.dataIndex][1] - 0.5;
                         const carrierCode = laneIds[hoverLaneIndex];
-                        const worstFlight  = extractWorstFlight(pointTime,scope.agg,scope.additionalSimultaneousFlights,carrierCode);
+                        const worstFlight = extractWorstFlight(pointTime, scope.agg, scope.additionalSimultaneousFlights, carrierCode);
                         // const objectId = formattedDate + "_" + carrierCode + worstFlight.currentFlightNumber + "_" + worstFlight.departureStation ;
-                        const objectId = worstFlight.iataObjectId ;
+                        const objectId = worstFlight.iataObjectId;
                         // const formattedDate = moment(pointTime).format('YYYYMMDD');
-                        if(objectId !== 'null')
-                        {
-                            $window.open(scope.vis.params.apiPnrBaseUrl+'/#/message?objectId='+objectId, '_blank');
+                        if (objectId !== 'null') {
+                            $window.open(scope.vis.params.apiPnrBaseUrl + '/#/message?objectId=' + objectId, '_blank');
                         }
                     }
                 });
@@ -697,16 +698,15 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
              * @param carrierCode
              * @returns {Array}
              */
-            function extractFlights(pointTime,carrierCodeAggs,additionalSimultaneousFlights,carrierCode) {
+            function extractFlights(pointTime, carrierCodeAggs, additionalSimultaneousFlights, carrierCode) {
                 let simultaneousFlights = [];
-                if(additionalSimultaneousFlights[carrierCode] !== undefined)
-                {
-                    if(additionalSimultaneousFlights[carrierCode].length > 0 && additionalSimultaneousFlights[carrierCode][0].key === pointTime )
+                if (additionalSimultaneousFlights[carrierCode] !== undefined) {
+                    if (additionalSimultaneousFlights[carrierCode].length > 0 && additionalSimultaneousFlights[carrierCode][0].key === pointTime)
                         return additionalSimultaneousFlights[carrierCode];
                 }
                 _.each(carrierCodeAggs, function (carrierCodeAgg) {
                     _.each(carrierCodeAgg['3'].buckets, function (bucket) {
-                        if(bucket.key === pointTime && bucket.displayKey === carrierCode) {
+                        if (bucket.key === pointTime && bucket.displayKey === carrierCode) {
                             simultaneousFlights.push(bucket);
                         }
                     });
@@ -714,35 +714,49 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 return simultaneousFlights;
             }
 
-
-            function extractWorstFlight(pointTime, carrierCodeAggs, additionalSimultaneousFlights, carrierCode)
-            {
+            /**
+             *
+             * @param pointTime
+             * @param carrierCodeAggs
+             * @param additionalSimultaneousFlights
+             * @param carrierCode
+             * @returns {*}
+             */
+            function extractWorstFlight(pointTime, carrierCodeAggs, additionalSimultaneousFlights, carrierCode) {
                 let simultaneousFlights = extractFlights(pointTime, carrierCodeAggs, additionalSimultaneousFlights, carrierCode);
                 let worstFlight = simultaneousFlights [0];
-                _.each(simultaneousFlights, function (flight)
-                {
-                    if (flight['1'].value > worstFlight['1'].value)
-                    {
+                _.each(simultaneousFlights, function (flight) {
+                    if (flight['1'].value > worstFlight['1'].value) {
                         worstFlight = flight;
                     }
                 });
                 return worstFlight;
             }
 
-            function showTooltip(item,laneLabel) {
+            /**
+             *
+             * @param item
+             * @param laneLabel
+             */
+            function showTooltip(item, laneLabel) {
                 const pointTime = item.datapoint[0];
-                const dataModel = item.series.data[item.dataIndex][2];
-                const metricsAgg = scope.vis.aggs.bySchemaName.metric[0];
-                const metricLabel = metricsAgg.makeLabel();
-                const displayScore = numeral(dataModel.score).format(scope.vis.params.tooltipNumberFormat);
+                // const dataModel = item.series.data[item.dataIndex][2];
+                // const metricsAgg = scope.vis.aggs.bySchemaName.metric[0];
+                // const metricLabel = metricsAgg.makeLabel();
+                // const displayScore = numeral(dataModel.score).format(scope.vis.params.tooltipNumberFormat);
                 // Display date using dateFormat configured in Kibana settings.
                 const formattedDate = moment(pointTime).format('HH:mm');
-                const simultaneousFlights  = extractFlights(pointTime,scope.agg,scope.additionalSimultaneousFlights,laneLabel);
+                const simultaneousFlights = extractFlights(pointTime, scope.agg, scope.additionalSimultaneousFlights, laneLabel);
                 let contents = '';
                 _.each(simultaneousFlights, function (flight) {
-                    contents += flight.carrierCode + ' - '+ flight.currentFlightNumber + ' - '+ receptionStatusLabel(flight['1'].value) +'<br/>';
+                    contents += flight.carrierCode + ' - ' + flight.currentFlightNumber;
+                    if(flight.routing !== undefined) {
+                        contents += ' (' + flight.routing + ')';
+                    }
+                    contents += ' - ' + receptionStatusLabel(flight['1'].value);
+                    contents += '<br/>';
                 });
-                contents += '<hr/>'+formattedDate;
+                contents += '<hr/>' + formattedDate;
                 const x = item.pageX;
                 const y = item.pageY;
                 const offset = 5;
@@ -757,10 +771,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 const $win = $(window);
                 const winHeight = $win.height();
                 const yOffset = window.pageYOffset;
-                const width = $('.prl-swimlane-vis-tooltip').outerWidth(true);
-                const height = $('.prl-swimlane-vis-tooltip').outerHeight(true);
-                $('.prl-swimlane-vis-tooltip').css('left', x + offset + width > $win.width() ? x - offset - width : x + offset);
-                $('.prl-swimlane-vis-tooltip').css('top', y + height < winHeight + yOffset ? y : y - height);
+                let $plot = $('.prl-swimlane-vis-tooltip');
+                const width = $plot.outerWidth(true);
+                const height = $plot.outerHeight(true);
+                $plot.css('left', x + offset + width > $win.width() ? x - offset - width : x + offset);
+                $plot.css('top', y + height < winHeight + yOffset ? y : y - height);
 
             }
         }
@@ -787,6 +802,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     return "Missing";
             }
         }
+
         return {
             link: link
         };
