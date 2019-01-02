@@ -96,7 +96,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
     $scope.pushIfNotPresent = function (list, bucket) {
         let present = false;
         _.each(list, function (current) {
-            if (current['1'].value === bucket['1'].value) {
+            // if (current['1'].value === bucket['1'].value) {
+            if (current.iataObjectId === bucket.iataObjectId) {
                 present = true;
             }
         });
@@ -185,27 +186,34 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 let replaced = false;
                 let old = false;
 
+                let newFlight = bucket['3'].buckets[0];
+
                 // if this new flight happens to be at the same time as another one, we'll only add if it has a new "status code"
                 // if it has a smaller "status code", we'll add it to another list that we'll use later in the tool tip
                 _.each(carrierCodesMap[currentIcaoCarrierCode]['3'].buckets, function (current, i) {
 
                     // we have a match (a simultaneous flight)
-                    if (current.key === bucket['3'].buckets[0].key) {
+                    if (current.key === newFlight.key) {
+                        console.log('Simultaneous flight for key ' + current.key)
                         // the new flight has a bigger "status code" ==> we override the already existing one
-                        if (bucket['3'].buckets[0]['1'].value > current['1'].value) {
-                            carrierCodesMap[currentIcaoCarrierCode]['3'].buckets[i] = bucket['3'].buckets[0];
+                        let newFlightNumber = newFlight.currentFlightNumber;
+                        let newFlightMaxStatusCode = newFlight['1'].value;
+                        let currentFlightMaxStatusCode = current['1'].value;
+                        console.log('Flight ' + newFlightNumber + ' : newFlightMaxStatusCode='+newFlightMaxStatusCode + '/currentFlightMaxStatusCode='+currentFlightMaxStatusCode);
+                        if (newFlightMaxStatusCode > currentFlightMaxStatusCode) {
+                            carrierCodesMap[currentIcaoCarrierCode]['3'].buckets[i] = newFlight;
                             replaced = true;
                         } else {
                             old = true;
                         }
                         // we keep track of all simultaneous flights by adding them to this list (if not already added)
                         $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey], current);
-                        $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey], bucket['3'].buckets[0]);
+                        $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey], newFlight);
                     }
                 });
 
                 if (!replaced && !old) {
-                    carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
+                    carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(newFlight);
                 }
                 carrierCodesMap[currentIcaoCarrierCode].doc_count++;
             }
