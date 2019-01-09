@@ -113,9 +113,10 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
     };
 
     $scope.aggregateByCarrierCode = function (buckets) {
+
         let carrierCodesMap = {};
         let additionalSimultaneousFlights = {};
-
+        $scope.lineLabels.clear();
         _.each(buckets, function (bucket) {
 
             // Value examples:
@@ -144,9 +145,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             const currentFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
             const departureStation = icaoObjectId.split('_')[2];
 
-            if (!$scope.lineLabels.has(currentIcaoCarrierCode)) {
-                $scope.lineLabels.set(currentIcaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, currentIcaoCarrierCode, carrierName));
-            }
+            $scope.lineLabels.set(currentIcaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, currentIcaoCarrierCode, carrierName));
 
             let displayKey = $scope.lineLabels.get(currentIcaoCarrierCode);
 
@@ -194,12 +193,14 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
                     // we have a match (a simultaneous flight)
                     if (current.key === newFlight.key) {
-                        console.log('Simultaneous flight for key ' + current.key)
+                        // console.log('----------------- Simultaneous flight '+currentIcaoCarrierCode+':');
+                        // console.log('Current : ' + current.key + ':' + current.currentFlightNumber);
+                        // console.log('New     : ' + newFlight.key + ':' + newFlight.currentFlightNumber);
                         // the new flight has a bigger "status code" ==> we override the already existing one
                         let newFlightNumber = newFlight.currentFlightNumber;
                         let newFlightMaxStatusCode = newFlight['1'].value;
                         let currentFlightMaxStatusCode = current['1'].value;
-                        console.log('Flight ' + newFlightNumber + ' : newFlightMaxStatusCode='+newFlightMaxStatusCode + '/currentFlightMaxStatusCode='+currentFlightMaxStatusCode);
+                        // console.log('Flight ' + newFlightNumber + ' : newFlightMaxStatusCode='+newFlightMaxStatusCode + '/currentFlightMaxStatusCode='+currentFlightMaxStatusCode);
                         if (newFlightMaxStatusCode > currentFlightMaxStatusCode) {
                             carrierCodesMap[currentIcaoCarrierCode]['3'].buckets[i] = newFlight;
                             replaced = true;
@@ -223,11 +224,13 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             result.push(carrierCodesMap[i]);
         }
         $scope.agg = result;
+
         $scope.additionalSimultaneousFlights = additionalSimultaneousFlights;
         return result;
     };
 
     $scope.processAggregations = function (aggregations) {
+
         const dataByViewBy = {};
         // Keep a list of the 'view by' keys in the order that they were
         // returned by the aggregation which will be used for the lane labels.
@@ -242,6 +245,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             const timeAggId = timeAgg.id;
 
             if ($scope.vis.aggs.bySchemaName.viewBy !== undefined) {
+
                 // Get the buckets of the viewBy aggregation.
                 const viewByAgg = $scope.vis.aggs.bySchemaName.viewBy[0];
                 let viewByBuckets = aggregations[viewByAgg.id].buckets;
@@ -265,6 +269,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     });
                 });
             } else {
+
                 // No 'View by' selected - compile data for a single swimlane
                 // showing the time bucketed metric value.
                 const timesForViewBy = {};
@@ -546,16 +551,16 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 // Draw crosshair
                 const setNowCrosshair = function (intervalIndicator) {
                     const now = new Date();
-                    console.log("setNowCrosshair : update at " + now);
+                    // console.log("setNowCrosshair : update at " + now);
                     plot.lockCrosshair({x: now.getTime()});
                     if (!intervalIndicator) {
                         if (crossairRefreshTimer != null) {
-                            console.log("setNowCrosshair : cancel previous timer");
+                            // console.log("setNowCrosshair : cancel previous timer");
                             $interval.cancel(crossairRefreshTimer);
                         }
                         const elapseInMinutes = (plot.getAxes().xaxis.max - plot.getAxes().xaxis.min) / (1000 * 60);
                         const intervalInMinutes = elapseInMinutes > 120 ? (elapseInMinutes > 240 ? 5 : 1) : (elapseInMinutes < 60 ? 0.25 : 0.5);
-                        console.log("setNowCrosshair : interval in minutes is " + intervalInMinutes);
+                        // console.log("setNowCrosshair : interval in minutes is " + intervalInMinutes);
                         crossairRefreshTimer = $interval(function () {
                             setNowCrosshair(true);
                         }, 1000 * 60 * intervalInMinutes);
@@ -655,6 +660,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     timefilter.time.to = moment.utc(zoomTo);
                     timefilter.time.mode = 'absolute';
                     timefilter.update();
+
                 });
                 element.unbind('plotclick');
                 element.bind('plotclick', function (event, ranges, item) {
@@ -707,15 +713,21 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
              * @returns {Array}
              */
             function extractFlights(pointTime, carrierCodeAggs, additionalSimultaneousFlights, carrierCode) {
+                // console.log('*************************************** extractFlights : pointTime=' + pointTime)
                 let simultaneousFlights = [];
-                if (additionalSimultaneousFlights[carrierCode] !== undefined) {
-                    if (additionalSimultaneousFlights[carrierCode].length > 0 && additionalSimultaneousFlights[carrierCode][0].key === pointTime)
-                        return additionalSimultaneousFlights[carrierCode];
-                }
+                // let carrierFlights = additionalSimultaneousFlights[carrierCode];
+                // if (carrierFlights !== undefined) {
+                //     if (carrierFlights.length > 0 && carrierFlights[0].key === pointTime) {
+                //         return carrierFlights;
+                //     }
+                // }
                 _.each(carrierCodeAggs, function (carrierCodeAgg) {
                     _.each(carrierCodeAgg['3'].buckets, function (bucket) {
-                        if (bucket.key === pointTime && bucket.displayKey === carrierCode) {
-                            simultaneousFlights.push(bucket);
+                        if(bucket.displayKey === carrierCode) {
+                            if (bucket.key === pointTime) {
+                                // console.log('bucket added to simultaneousFlights:' + bucket.currentFlightNumber + '/key=' + bucket.key);
+                                simultaneousFlights.push(bucket);
+                            }
                         }
                     });
                 });
