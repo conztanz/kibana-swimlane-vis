@@ -107,9 +107,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
     };
 
     $scope.buildLineLabel = function (iataCarrierCode, icaoCode, carrierName) {
-        return carrierName + '<br>(' + icaoCode
-            + (iataCarrierCode !== undefined ? '/' + iataCarrierCode : '')
-            + ')';
+        // return carrierName + '<br>(' + icaoCode
+        //     + (iataCarrierCode !== undefined ? '/' + iataCarrierCode : '')
+        //     + ')';
+        return (iataCarrierCode !== undefined ? iataCarrierCode  + ' ' : '')
+            + '(' + icaoCode + '-' + carrierName + ')';
     };
 
     $scope.aggregateByCarrierCode = function (buckets) {
@@ -517,6 +519,9 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
                 let yaxisMarking;
                 _.each(laneIds, (labelId, i) => {
+                    // const iataCarrierCode = labelId.toString().substring(0,2).fontsize(14)
+                    // const details = labelId.toString().substring(2).fontsize(8)
+                    // let labelText = iataCarrierCode + details;
                     let labelText = labelId;
 
                     // Crop 'viewBy' labels over 27 chars of more so that the y-axis labels don't take up too much width.
@@ -591,14 +596,22 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     scope._resizeChecker.destroy();
                 });
 
+                // --------------------------------------------------------
+                // FIXME Emmanuel GIRE => ce code ne fonctionne pas :
+
                 // Add tooltips to the y-axis labels to display the full 'viewBy' field
                 // - useful for cases where a long text value has been cropped.
                 // NB. requires z-index set in CSS so that hover is picked up on label.
                 const yAxisLabelDivs = $('.flot-y-axis', angular.element(element)).find('.flot-tick-label');
                 _.each(laneIds, (labelId, i) => {
                     const labelText = labelId;
-                    $(yAxisLabelDivs[i]).attr('title', labelText);
+                    let labelDiv = $(yAxisLabelDivs[i]);
+                    labelDiv.attr('title', labelText);
+                    // console.log('DIV axisY : ' + labelDiv.title)
+                    // console.log('$(yAxisLabelDivs['+i+']='+labelDiv.name);
                 });
+                // --------------------------------------------------------
+
 
                 // Show tooltips on point hover.
                 element.unbind('plothover');
