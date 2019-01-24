@@ -638,6 +638,17 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 // Show tooltips on point hover.
                 element.unbind('plothover');
                 element.bind('plothover', (event, pos, item) => {
+
+                    function sortLineLabels() {
+                        scope.lineLabels = new Map([...scope.lineLabels.entries()].sort((labelEntry1, labelEntry2) => {
+                            const label1 = labelEntry1[1];
+                            const label2 = labelEntry2[1];
+                            if(label1 < label2) return -1;
+                            if(label1 > label2) return 1;
+                            return 0;
+                        }))
+                    }
+
                     if (item) {
                         element.addClass('prl-swimlane-vis-point-over ');
                         if (scope._previousHoverPoint !== item.dataIndex) {
@@ -648,16 +659,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                             }
 
                             const hoverLaneIndex = item.series.data[item.dataIndex][1] - 0.5;
-
                             let currentIcaoCarrierCode;
-
-                            scope.lineLabels = new Map([...scope.lineLabels.entries()].sort((labelEntry1, labelEntry2) => {
-                                const label1 = labelEntry1[1];
-                                const label2 = labelEntry2[1];
-                                if(label1 < label2) return -1;
-                                if(label1 > label2) return 1;
-                                return 0;
-                            }))
+                            sortLineLabels();
                             let icaoCodes = scope.lineLabels.keys();
 
                             // Reverse the keys as the lanes are rendered bottom up.
