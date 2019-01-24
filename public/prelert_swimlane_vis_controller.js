@@ -199,7 +199,6 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         // console.log('Current : ' + current.key + ':' + current.currentFlightNumber);
                         // console.log('New     : ' + newFlight.key + ':' + newFlight.currentFlightNumber);
                         // the new flight has a bigger "status code" ==> we override the already existing one
-                        let newFlightNumber = newFlight.currentFlightNumber;
                         let newFlightMaxStatusCode = newFlight['1'].value;
                         let currentFlightMaxStatusCode = current['1'].value;
                         // console.log('Flight ' + newFlightNumber + ' : newFlightMaxStatusCode='+newFlightMaxStatusCode + '/currentFlightMaxStatusCode='+currentFlightMaxStatusCode);
@@ -231,6 +230,28 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
         return result;
     };
 
+    /**
+     *
+     * @param buckets
+     */
+    $scope.sortBucketsByKey = function (buckets) {
+        if (buckets !== undefined) {
+            // $scope.lineLabels.clear();
+            var sorted = buckets.sort((bucket1, bucket2) => {
+                if(bucket1.key > bucket2.key) return 1;
+                if(bucket1.key < bucket2.key) return -1;
+                return 0;
+            })
+            $scope.agg = sorted;
+            return sorted;
+        }
+        return buckets;
+    }
+
+    /**
+     *
+     * @param aggregations
+     */
     $scope.processAggregations = function (aggregations) {
 
         const dataByViewBy = {};
@@ -252,6 +273,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 const viewByAgg = $scope.vis.aggs.bySchemaName.viewBy[0];
                 let viewByBuckets = aggregations[viewByAgg.id].buckets;
                 viewByBuckets = $scope.aggregateByCarrierCode(viewByBuckets);
+                $scope.sortBucketsByKey(viewByBuckets);
                 _.each(viewByBuckets, function (bucket) {
                     // There will be 1 bucket for each 'view by' value.
                     const viewByValue = bucket.key.toString();
@@ -628,7 +650,16 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                             const hoverLaneIndex = item.series.data[item.dataIndex][1] - 0.5;
 
                             let currentIcaoCarrierCode;
+
+                            scope.lineLabels = new Map([...scope.lineLabels.entries()].sort((labelEntry1, labelEntry2) => {
+                                const label1 = labelEntry1[1];
+                                const label2 = labelEntry2[1];
+                                if(label1 < label2) return -1;
+                                if(label1 > label2) return 1;
+                                return 0;
+                            }))
                             let icaoCodes = scope.lineLabels.keys();
+
                             // Reverse the keys as the lanes are rendered bottom up.
                             let keys = Array.from(icaoCodes).reverse();
 
