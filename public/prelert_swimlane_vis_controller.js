@@ -106,7 +106,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
         }
     };
 
-    $scope.buildLineLabel = function (iataCarrierCode, icaoCode, carrierName) {
+    $scope.buildLineLabel = function (iataCarrierCode, iataFlightNumber, icaoCode, carrierName) {
         // return carrierName + '<br>(' + icaoCode
         //     + (iataCarrierCode !== undefined ? '/' + iataCarrierCode : '')
         //     + ')';
@@ -138,16 +138,27 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 iataCarrierCode = splitBucketKey[3];
             }
 
+            let iataFlightNumber;
+            if(iataObjectId !== undefined && iataObjectId !== 'null') {
+                const iataSplit = iataObjectId.split("_");
+                if(iataSplit.length > 1) {
+                    const iataObjectIdSplit = iataSplit[1];
+                    if(iataObjectIdSplit.length > 1) {
+                        iataFlightNumber = iataObjectIdSplit.substring(2);
+                    }
+                }
+            }
+
             let routing;
             if (splitBucketKey.length > 4) {
                 routing = splitBucketKey[4];
             }
 
             const currentIcaoCarrierCode = icaoObjectId.split('_')[1].slice(0, 3);
-            const currentFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
+            const currentIcaoFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
             const departureStation = icaoObjectId.split('_')[2];
 
-            $scope.lineLabels.set(currentIcaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, currentIcaoCarrierCode, carrierName));
+            $scope.lineLabels.set(currentIcaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, currentIcaoCarrierCode, carrierName));
 
             let displayKey = $scope.lineLabels.get(currentIcaoCarrierCode);
 
@@ -165,22 +176,27 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 // the following fields wouldn't normally exist, be we add them to be shown in tooltip
                 bucket['3'].buckets[0].carrierCode = currentIcaoCarrierCode;
                 bucket['3'].buckets[0].iataObjectId = iataObjectId;
-                bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
+                bucket['3'].buckets[0].currentFlightNumber = currentIcaoFlightNumber;
                 bucket['3'].buckets[0].departureStation = departureStation;
                 bucket['3'].buckets[0].displayKey = displayKey;
                 bucket['3'].buckets[0].iataCarrierCode = iataCarrierCode;
                 bucket['3'].buckets[0].routing = routing;
+
+                bucket['3'].buckets[0].iataFlightNumber = iataFlightNumber;
+
                 carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
             }
             // if this carrier code already exists, we add the current bucket into it
             else {
                 bucket['3'].buckets[0].carrierCode = currentIcaoCarrierCode;
-                bucket['3'].buckets[0].currentFlightNumber = currentFlightNumber;
+                bucket['3'].buckets[0].currentFlightNumber = currentIcaoFlightNumber;
                 bucket['3'].buckets[0].departureStation = departureStation;
                 bucket['3'].buckets[0].iataObjectId = iataObjectId;
                 bucket['3'].buckets[0].displayKey = displayKey;
                 bucket['3'].buckets[0].iataCarrierCode = iataCarrierCode;
                 bucket['3'].buckets[0].routing = routing;
+
+                bucket['3'].buckets[0].iataFlightNumber = iataFlightNumber;
 
                 carrierCodesMap[currentIcaoCarrierCode].key = displayKey;
 
@@ -816,14 +832,22 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 const simultaneousFlights = extractFlights(pointTime, scope.agg, scope.additionalSimultaneousFlights, laneLabel);
                 let contents = '';
                 _.each(simultaneousFlights, function (flight) {
-                    contents += flight.carrierCode + ' - ' + flight.currentFlightNumber;
+
+                    if(flight.iataCarrierCode !== undefined) {
+                        contents += flight.iataCarrierCode
+                        if(flight.iataFlightNumber !== undefined) {
+                            contents += flight.iataFlightNumber
+                        }
+                        contents += ' / '
+                    }
+                    contents += flight.carrierCode + flight.currentFlightNumber;
                     if(flight.routing !== undefined) {
                         contents += ' (' + flight.routing + ')';
                     }
-                    contents += ' - ' + receptionStatusLabel(flight['1'].value);
-                    contents += '<br/>';
+                    contents += '<hr> ' + receptionStatusLabel(flight['1'].value);
+                    // contents += '<br/>';
                 });
-                contents += '<hr/>' + formattedDate;
+                contents += ' ' + formattedDate;
                 const x = item.pageX;
                 const y = item.pageY;
                 const offset = 5;
@@ -860,11 +884,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 case 3:
                     return "Cancelled";
                 case 4:
-                    return "Received on Time";
+                    return "On time";
                 case 5:
                     return "Expected";
                 case 6:
-                    return "Received delayed";
+                    return "Delayed";
                 case 7:
                     return "Missing";
             }
