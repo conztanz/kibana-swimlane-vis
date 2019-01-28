@@ -894,13 +894,27 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         contents += ' (' + flight.routing + ')';
                     }
                     contents += '<hr> ';
+
+                    if (flight.pnrPush !== undefined) {
+                        contents += 'Push PNR : ' + flight.pnrPush
+                        contents += '<br/>';
+                    }
+                    if (flight.apiPush !== undefined) {
+                        contents += 'Push API : ' + flight.apiPush
+                        contents += '<br/>';
+                    }
+
                     // contents +=
                     contents += receptionStatusLabel(flight['1'].value);
+                    if (flight.etdGmt !== undefined) {
+                        contents += '<br/> - ETD : ' + flight.etdGmt;
+                    }
                     if (flight.flightState !== undefined) {
-                        if (flight.flightState == 'TERMINATED')
+                        if (flight.flightState == 'TERMINATED') {
                             contents += '<br/>' + 'Landed';
-                        if (flight.ataGmt !== undefined) {
-                            contents += ' ' + flight.ataGmt;
+                            if (flight.ataGmt !== undefined) {
+                                contents += ' - ATA : ' + flight.ataGmt;
+                            }
                         }
                     }
 
