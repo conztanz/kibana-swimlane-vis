@@ -877,7 +877,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 // const metricLabel = metricsAgg.makeLabel();
                 // const displayScore = numeral(dataModel.score).format(scope.vis.params.tooltipNumberFormat);
                 // Display date using dateFormat configured in Kibana settings.
-                const formattedDate = moment(pointTime).format('HH:mm');
+                // const formattedDate = moment(pointTime).format('HH:mm');
                 const simultaneousFlights = extractFlights(pointTime, scope.agg, scope.additionalSimultaneousFlights, laneLabel);
                 let contents = '';
                 _.each(simultaneousFlights, function (flight) {
@@ -906,8 +906,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
                     // contents +=
                     contents += receptionStatusLabel(flight['1'].value);
-                    if (flight.etdGmt !== undefined) {
-                        contents += '<br/> - ETD : ' + flight.etdGmt;
+                    if (flight.atdGmt !== undefined) {
+                        contents += '<br/>ATD : ' + flight.atdGmt;
+
+                    } else if (flight.etdGmt !== undefined) {
+                        contents += '<br/>ETD : ' + flight.etdGmt;
                     }
                     if (flight.flightState !== undefined) {
                         if (flight.flightState == 'TERMINATED') {
@@ -920,7 +923,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
                     // contents += '<br/>';
                 });
-                contents += ' ' + formattedDate;
+                // contents += ' ' + formattedDate;
                 const x = item.pageX;
                 const y = item.pageY;
                 const offset = 5;
