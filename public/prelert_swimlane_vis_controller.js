@@ -32,9 +32,6 @@ const module = uiModules.get('prelert_swimlane_vis/prelert_swimlane_vis', ['kiba
 function formatFunctionalDateForTooltip(dateValue) {
     return moment(dateValue).format('YYYY-MM-DD hh:mm');
 }
-function formatTechnicalDateForTooltip(dateValue) {
-    return moment(dateValue).format('YYYY-MM-DD hh:mm:ss');
-}
 
 module.controller('PrelertSwimlaneVisController', function ($scope, courier, $timeout) {
 
@@ -913,11 +910,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     contents += '<hr> ';
 
                     if (flight.pnrPush !== undefined) {
-                        contents += 'Push PNR : ' + formatTechnicalDateForTooltip(flight.pnrPush)
+                        contents += 'Push PNR : ' + formatFunctionalDateForTooltip(flight.pnrPush)
                         contents += '<br/>';
                     }
                     if (flight.apiPush !== undefined) {
-                        contents += 'Push API : ' + formatTechnicalDateForTooltip(flight.apiPush)
+                        contents += 'Push API : ' + formatFunctionalDateForTooltip(flight.apiPush)
                         contents += '<br/>';
                     }
 
@@ -931,12 +928,14 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     } else if (flight.etdGmt !== undefined) {
                         contents += '<br/>ETD : ' + formatFunctionalDateForTooltip(flight.etdGmt);
                     }
+
+                    if (flight.ataGmt !== undefined) {
+                        contents += '<br/>ATA : ' + formatFunctionalDateForTooltip(flight.ataGmt);
+                    }
+
                     if (flight.flightState !== undefined) {
                         if (flight.flightState == 'TERMINATED') {
                             contents += '<br/>' + 'Landed';
-                            if (flight.ataGmt !== undefined) {
-                                contents += ' - ATA : ' + formatFunctionalDateForTooltip(flight.ataGmt);
-                            }
                         }
                     }
 
