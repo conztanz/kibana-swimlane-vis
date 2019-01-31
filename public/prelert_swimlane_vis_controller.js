@@ -30,7 +30,7 @@ import {uiModules} from 'ui/modules';
 const module = uiModules.get('prelert_swimlane_vis/prelert_swimlane_vis', ['kibana']);
 
 function formatFunctionalDateForTooltip(dateValue) {
-    return moment(dateValue).format('YYYY-MM-DD hh:mm');
+    return moment(dateValue).format('YYYY-MM-DD HH:mm');
 }
 
 module.controller('PrelertSwimlaneVisController', function ($scope, courier, $timeout) {
