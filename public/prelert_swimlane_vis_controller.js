@@ -28,6 +28,14 @@ import {ResizeCheckerProvider} from 'ui/resize_checker';
 import {uiModules} from 'ui/modules';
 
 const module = uiModules.get('prelert_swimlane_vis/prelert_swimlane_vis', ['kibana']);
+
+function formatFunctionalDateForTooltip(dateValue) {
+    return moment(dateValue).format('YYYY-MM-DD hh:mm');
+}
+function formatTechnicalDateForTooltip(dateValue) {
+    return moment(dateValue).format('YYYY-MM-DD hh:mm:ss');
+}
+
 module.controller('PrelertSwimlaneVisController', function ($scope, courier, $timeout) {
 
     $scope.lineLabels = new Map();
@@ -117,7 +125,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
     $scope.aggregateByCarrierCode = function (buckets) {
 
         let carrierCodesMap = {};
-        let additionalSimultaneousFlights = {};
+        let additionalSimultaneousFlights = new Array();
         $scope.lineLabels.clear();
         _.each(buckets, function (bucket) {
 
@@ -128,7 +136,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             // Since 2019-01-25 (for LUX DEMO):
             // 20190125_TAP694_LPPT/null/TAP Portugal/TP/LIS-LUX/PNR:Missing-API:Missing/ATD:2019-01-25T13:47:00.000Z/ATA:2019-01-25T13:47:00.000Z/ETD:2019-01-25T13:47:00.000Z/flightStatus:ATC_ACTIVATED/PNRPUSH:2019-01-25T13:47:00.000Z_APIPUSH:2019-01-25T13:47:00.000Z
 
-            console.log('bucket.key=' + bucket.key);
+            // console.log('bucket.key=' + bucket.key);
 
             // extract Icao Carrier Code etc
             let splitBucketKey = bucket.key.split('/');
@@ -273,9 +281,9 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
                     // we have a match (a simultaneous flight)
                     if (current.key === newFlight.key) {
-                        // console.log('----------------- Simultaneous flight '+currentIcaoCarrierCode+':');
-                        // console.log('Current : ' + current.key + ':' + current.currentFlightNumber);
-                        // console.log('New     : ' + newFlight.key + ':' + newFlight.currentFlightNumber);
+                        console.log('----------------- Simultaneous flight ' + currentIcaoCarrierCode + ':');
+                        console.log('Current : ' + current.key + ':' + current.currentFlightNumber);
+                        console.log('New     : ' + newFlight.key + ':' + newFlight.currentFlightNumber);
                         // the new flight has a bigger "status code" ==> we override the already existing one
                         let newFlightMaxStatusCode = newFlight['1'].value;
                         let currentFlightMaxStatusCode = current['1'].value;
@@ -827,15 +835,24 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
              *
              * @param pointTime
              * @param carrierCodeAggs
-             * @param carrierCode
+             * @param displayKey
              * @returns {Array}
              */
-            function extractFlights(pointTime, carrierCodeAggs, additionalSimultaneousFlights, carrierCode) {
+            function extractFlights(pointTime, carrierCodeAggs, additionalSimultaneousFlights, displayKey) {
                 // console.log('*************************************** extractFlights : pointTime=' + pointTime)
+                // FIXME : voir si je peux réactiver l'affichage de plusieurs vols dans une seule infobulle.
+                // if (additionalSimultaneousFlights[displayKey] !== undefined) {
+                //     if (additionalSimultaneousFlights[displayKey].length > 0) {
+                //         let bucket = additionalSimultaneousFlights[displayKey][0];
+                //         if (bucket.key === pointTime) {
+                //             return additionalSimultaneousFlights[displayKey];
+                //         }
+                //     }
+                // }
                 let simultaneousFlights = [];
                 _.each(carrierCodeAggs, function (carrierCodeAgg) {
                     _.each(carrierCodeAgg['3'].buckets, function (bucket) {
-                        if (bucket.displayKey === carrierCode) {
+                        if (bucket.displayKey === displayKey) {
                             if (bucket.key === pointTime) {
                                 // console.log('bucket added to simultaneousFlights:' + bucket.currentFlightNumber + '/key=' + bucket.key);
                                 simultaneousFlights.push(bucket);
@@ -896,27 +913,29 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     contents += '<hr> ';
 
                     if (flight.pnrPush !== undefined) {
-                        contents += 'Push PNR : ' + flight.pnrPush
+                        contents += 'Push PNR : ' + formatTechnicalDateForTooltip(flight.pnrPush)
                         contents += '<br/>';
                     }
                     if (flight.apiPush !== undefined) {
-                        contents += 'Push API : ' + flight.apiPush
+                        contents += 'Push API : ' + formatTechnicalDateForTooltip(flight.apiPush)
                         contents += '<br/>';
                     }
 
                     // contents +=
                     contents += receptionStatusLabel(flight['1'].value);
                     if (flight.atdGmt !== undefined) {
-                        contents += '<br/>ATD : ' + flight.atdGmt;
+                        // contents += '<br/>ATD : ' + flight.atdGmt;
+                        contents += '<br/>ATD : ' + formatFunctionalDateForTooltip(flight.atdGmt) ;
+
 
                     } else if (flight.etdGmt !== undefined) {
-                        contents += '<br/>ETD : ' + flight.etdGmt;
+                        contents += '<br/>ETD : ' + formatFunctionalDateForTooltip(flight.etdGmt);
                     }
                     if (flight.flightState !== undefined) {
                         if (flight.flightState == 'TERMINATED') {
                             contents += '<br/>' + 'Landed';
                             if (flight.ataGmt !== undefined) {
-                                contents += ' - ATA : ' + flight.ataGmt;
+                                contents += ' - ATA : ' + formatFunctionalDateForTooltip(flight.ataGmt);
                             }
                         }
                     }
