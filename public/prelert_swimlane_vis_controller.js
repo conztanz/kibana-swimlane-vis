@@ -121,6 +121,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
     $scope.aggregateByCarrierCode = function (buckets) {
 
+        console.log('' + buckets.length + ' buckets')
         let carrierCodesMap = {};
         let additionalSimultaneousFlights = new Array();
         $scope.lineLabels.clear();
@@ -246,6 +247,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             }
             // if this carrier code already exists, we add the current bucket into it
             else {
+
+                if (additionalSimultaneousFlights[displayKey] === undefined) {
+                    additionalSimultaneousFlights[displayKey] = [];
+                }
+
                 bucket['3'].buckets[0].carrierCode = currentIcaoCarrierCode;
                 bucket['3'].buckets[0].currentFlightNumber = currentIcaoFlightNumber;
                 bucket['3'].buckets[0].departureStation = departureStation;
@@ -277,6 +283,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 _.each(carrierCodesMap[currentIcaoCarrierCode]['3'].buckets, function (current, i) {
 
                     // we have a match (a simultaneous flight)
+
                     if (current.key === newFlight.key) {
                         console.log('----------------- Simultaneous flight ' + currentIcaoCarrierCode + ':');
                         console.log('Current : ' + current.key + ':' + current.currentFlightNumber);
@@ -772,26 +779,28 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 });
 
                 // Set the Kibana timefilter if the user selects a range on the chart.
-                element.unbind('plotselected');
-                element.bind('plotselected', (event, ranges) => {
-                    let zoomFrom = ranges.xaxis.from;
-                    let zoomTo = ranges.xaxis.to;
+                /*
+                                element.unbind('plotselected');
+                                element.bind('plotselected', (event, ranges) => {
+                                    let zoomFrom = ranges.xaxis.from;
+                                    let zoomTo = ranges.xaxis.to;
 
-                    // Aggregation returns points at start of bucket, so make sure the time
-                    // range zoomed in to covers the full aggregation interval.
-                    const timeAgg = scope.vis.aggs.bySchemaName.timeSplit[0];
-                    const aggIntervalMs = timeAgg.buckets.getInterval().asMilliseconds();
+                                    // Aggregation returns points at start of bucket, so make sure the time
+                                    // range zoomed in to covers the full aggregation interval.
+                                    const timeAgg = scope.vis.aggs.bySchemaName.timeSplit[0];
+                                    const aggIntervalMs = timeAgg.buckets.getInterval().asMilliseconds();
 
-                    // Add a bit of extra padding before start time.
-                    zoomFrom = zoomFrom - (aggIntervalMs / 4);
-                    zoomTo = zoomTo + aggIntervalMs;
+                                    // Add a bit of extra padding before start time.
+                                    zoomFrom = zoomFrom - (aggIntervalMs / 4);
+                                    zoomTo = zoomTo + aggIntervalMs;
 
-                    timefilter.time.from = moment.utc(zoomFrom);
-                    timefilter.time.to = moment.utc(zoomTo);
-                    timefilter.time.mode = 'absolute';
-                    timefilter.update();
+                                    timefilter.time.from = moment.utc(zoomFrom);
+                                    timefilter.time.to = moment.utc(zoomTo);
+                                    timefilter.time.mode = 'absolute';
+                                    timefilter.update();
 
-                });
+                                });
+                */
                 element.unbind('plotclick');
                 element.bind('plotclick', function (event, ranges, item) {
                     // if the item is null then the user didn't click on a rectangle, it is probably a resize, so we just don't do anything
@@ -809,7 +818,6 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         }
                     }
                 });
-
 
             }
 
@@ -836,22 +844,26 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
              * @returns {Array}
              */
             function extractFlights(pointTime, carrierCodeAggs, additionalSimultaneousFlights, displayKey) {
-                // console.log('*************************************** extractFlights : pointTime=' + pointTime)
-                // FIXME : voir si je peux réactiver l'affichage de plusieurs vols dans une seule infobulle.
-                // if (additionalSimultaneousFlights[displayKey] !== undefined) {
-                //     if (additionalSimultaneousFlights[displayKey].length > 0) {
-                //         let bucket = additionalSimultaneousFlights[displayKey][0];
-                //         if (bucket.key === pointTime) {
-                //             return additionalSimultaneousFlights[displayKey];
-                //         }
-                //     }
-                // }
+
+                let flights = [];
+                if (additionalSimultaneousFlights[displayKey] !== undefined) {
+                    if (additionalSimultaneousFlights[displayKey].length > 0) {
+                        _.each(additionalSimultaneousFlights[displayKey], function (bucket) {
+                            if (bucket.key === pointTime) {
+                                flights.push(bucket)
+                            }
+                        })
+                        if (flights.length > 0) {
+                            return flights;
+                        }
+                    }
+                }
                 let simultaneousFlights = [];
                 _.each(carrierCodeAggs, function (carrierCodeAgg) {
                     _.each(carrierCodeAgg['3'].buckets, function (bucket) {
                         if (bucket.displayKey === displayKey) {
                             if (bucket.key === pointTime) {
-                                // console.log('bucket added to simultaneousFlights:' + bucket.currentFlightNumber + '/key=' + bucket.key);
+                                // console.log('bucket added to simultaneousFlights for display key ' + displayKey + ' / pointTime=' + pointTime + ':' + bucket.carrierCode + bucket.currentFlightNumber + '/' + bucket.routing + '/key=' + bucket.key);
                                 simultaneousFlights.push(bucket);
                             }
                         }
@@ -922,12 +934,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     contents += receptionStatusLabel(flight['1'].value);
                     if (flight.atdGmt !== undefined) {
                         // contents += '<br/>ATD : ' + flight.atdGmt;
-                        contents += '<br/>ATD : ' + formatFunctionalDateForTooltip(flight.atdGmt) ;
-
-
+                        contents += '<br/>ATD : ' + formatFunctionalDateForTooltip(flight.atdGmt);
                     } else if (flight.etdGmt !== undefined) {
                         contents += '<br/>ETD : ' + formatFunctionalDateForTooltip(flight.etdGmt);
                     }
+
 
                     if (flight.ataGmt !== undefined) {
                         contents += '<br/>ATA : ' + formatFunctionalDateForTooltip(flight.ataGmt);
@@ -938,8 +949,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                             contents += '<br/>' + 'Landed';
                         }
                     }
-
-                    // contents += '<br/>';
+                    if (simultaneousFlights.length > 1) contents += '<br/><br/>';
                 });
                 // contents += ' ' + formattedDate;
                 const x = item.pageX;
@@ -959,8 +969,13 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 let $plot = $('.prl-swimlane-vis-tooltip');
                 const width = $plot.outerWidth(true);
                 const height = $plot.outerHeight(true);
+                console.log('height=' + height)
                 $plot.css('left', x + offset + width > $win.width() ? x - offset - width : x + offset);
-                $plot.css('top', y + height < winHeight + yOffset ? y : y - height);
+
+                const currentTop = y + height < winHeight + yOffset ? y : yOffset
+                // const currentTop = y;
+                console.log('currentTop=' + currentTop)
+                $plot.css('top', currentTop);
 
             }
         }
@@ -978,7 +993,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 case 3:
                     return "Cancelled";
                 case 4:
-                    return "On time";
+                    return "In time";
                 case 5:
                     return "Expected";
                 case 6:
