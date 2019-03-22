@@ -121,7 +121,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
     $scope.aggregateByCarrierCode = function (buckets) {
 
-        console.log('' + buckets.length + ' buckets')
+        // console.log('' + buckets.length + ' buckets')
         let carrierCodesMap = {};
         let additionalSimultaneousFlights = new Array();
         $scope.lineLabels.clear();
@@ -285,9 +285,9 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     // we have a match (a simultaneous flight)
 
                     if (current.key === newFlight.key) {
-                        console.log('----------------- Simultaneous flight ' + currentIcaoCarrierCode + ':');
-                        console.log('Current : ' + current.key + ':' + current.currentFlightNumber);
-                        console.log('New     : ' + newFlight.key + ':' + newFlight.currentFlightNumber);
+                        // console.log('----------------- Simultaneous flight ' + currentIcaoCarrierCode + ':');
+                        // console.log('Current : ' + current.key + ':' + current.currentFlightNumber);
+                        // console.log('New     : ' + newFlight.key + ':' + newFlight.currentFlightNumber);
                         // the new flight has a bigger "status code" ==> we override the already existing one
                         let newFlightMaxStatusCode = newFlight['1'].value;
                         let currentFlightMaxStatusCode = current['1'].value;
@@ -617,7 +617,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         mode: 'x'
                     },
                     selection: {
-                        mode: 'x',
+                        mode: null,
                         color: '#bbbbbb'
                     }
                 };
@@ -778,6 +778,26 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     }
                 });
 
+/*
+                element.bind('mousedown',()=> {
+
+                    // window.alert('click');
+                    // element.unbind('mousemove')
+                    // element.unbind('plotselected');
+                })
+*/
+                // element.unbind('plothover');
+                element.unbind('plotselected');
+
+//                 element.bind('plothover', (event, [pos, item]) => {
+// console.log('event='+event+' / pos='+pos+' / '+ 'item='+item)
+//                 }
+                element.bind('plotselected', (event, ranges) => {
+                    //element.unbind('plotselected');
+                    // window.alert('Zoom is disabled')
+                    // $scope.$emit('plotunselected')
+                    // $scope.$emit('mousedown')
+                });
                 // Set the Kibana timefilter if the user selects a range on the chart.
                 /*
                                 element.unbind('plotselected');
@@ -939,7 +959,6 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         contents += '<br/>ETD : ' + formatFunctionalDateForTooltip(flight.etdGmt);
                     }
 
-
                     if (flight.ataGmt !== undefined) {
                         contents += '<br/>ATA : ' + formatFunctionalDateForTooltip(flight.ataGmt);
                     }
@@ -952,6 +971,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     if (simultaneousFlights.length > 1) contents += '<br/><br/>';
                 });
                 // contents += ' ' + formattedDate;
+
                 const x = item.pageX;
                 const y = item.pageY;
                 const offset = 5;
@@ -962,6 +982,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     'top': y + offset,
                     'left': x + offset
                 }).appendTo('body').fadeIn(200);
+
                 // Position the tooltip.
                 const $win = $(window);
                 const winHeight = $win.height();
@@ -969,12 +990,9 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 let $plot = $('.prl-swimlane-vis-tooltip');
                 const width = $plot.outerWidth(true);
                 const height = $plot.outerHeight(true);
-                console.log('height=' + height)
                 $plot.css('left', x + offset + width > $win.width() ? x - offset - width : x + offset);
 
                 const currentTop = y + height < winHeight + yOffset ? y : yOffset
-                // const currentTop = y;
-                console.log('currentTop=' + currentTop)
                 $plot.css('top', currentTop);
 
             }
