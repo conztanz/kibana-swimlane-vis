@@ -1017,6 +1017,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 case 6:
                     return "Delayed";
                 case 7:
+                    // Transition period : uncomment "Too late" if we implement reception status computation depending
+                    // on arrival date time
+                    // return "Too late";
+                    return "Missing";
+                case 8:
                     return "Missing";
             }
         }
