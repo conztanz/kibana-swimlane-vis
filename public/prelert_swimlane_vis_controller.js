@@ -123,15 +123,15 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
         // console.log('' + buckets.length + ' buckets')
         let carrierCodesMap = {};
-        let additionalSimultaneousFlights = new Array();
+        let simFlights = new Array();
         $scope.lineLabels.clear();
         _.each(buckets, function (bucket) {
 
+            // In index pattern's, the scripted field named "SwimlaneLineDetails" is used as bucket key (= aggregation "view by" term).
             // Value examples:
-            // 20181207_LGL9563_ELLX/20181207_LG9563_LUX/Luxair/LG
-            // 20181207_THY7NP_ELLX/null/Turkish Airlines/TK
-            // Since 2019-01-25 (for LUX DEMO):
-            // 20190125_TAP694_LPPT/null/TAP Portugal/TP/LIS-LUX/PNR:Missing-API:Missing/ATD:2019-01-25T13:47:00.000Z/ATA:2019-01-25T13:47:00.000Z/ETD:2019-01-25T13:47:00.000Z/flightStatus:ATC_ACTIVATED/PNRPUSH:2019-01-25T13:47:00.000Z_APIPUSH:2019-01-25T13:47:00.000Z
+            // 20190509_SWR78K_LSZH/20190509_LX0754_ZRH/Swiss International Air Lines/LX/ZRH-LUX/PNR=Received on time-API=Expected/ATD=2019-05-09T12:43:00.000Z/ATA=2019-05-09T13:31:00.000Z/ETD=2019-05-09T11:40:00.000Z/flightStatus=ATC_ACTIVATED/PNRPUSH=2019-05-09T11:58:16.147Z/
+            // 20190509_LGL8014_LFPG/20190509_LG8014_CDG/Luxair/LG/CDG-LUX/PNR=Received on time-API=Missing/ATD=2019-05-09T11:33:00.000Z/ATA=2019-05-09T12:09:00.000Z/ETD=2019-05-09T11:26:00.000Z/flightStatus=TERMINATED/PNRPUSH=2019-05-09T11:24:26.001Z/
+            // 20190509_LGL9736_EDDM/null/Luxair/LG/MUC-LUX/PNR=Scheduled-API=Scheduled///ETD=2019-05-09T14:27:00.000Z/flightStatus=FILED//
 
             // extract Icao Carrier Code etc
             let splitBucketKey = bucket.key.split('/');
@@ -197,61 +197,64 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 let apiPushSplit = apiPushSection.split("=");
                 apiPush = new Date(apiPushSplit[1]);
             }
-            const currentIcaoCarrierCode = icaoObjectId.split('_')[1].slice(0, 3);
-            const currentIcaoFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
+            const icaoCarrierCode = icaoObjectId.split('_')[1].slice(0, 3);
+            const icaoFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
             const departureStation = icaoObjectId.split('_')[2];
 
-            $scope.lineLabels.set(currentIcaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, currentIcaoCarrierCode, carrierName));
-            let displayKey = $scope.lineLabels.get(currentIcaoCarrierCode);
+            $scope.lineLabels.set(icaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, icaoCarrierCode, carrierName));
+            let displayKey = $scope.lineLabels.get(icaoCarrierCode);
 
-            if (additionalSimultaneousFlights[displayKey] === undefined) {
-                additionalSimultaneousFlights[displayKey] = [];
+            if (simFlights[displayKey] === undefined) {
+                simFlights[displayKey] = [];
             }
 
-            // if this carrier code doesn't already exist, we add it
             let bucketFlight = bucket['3'].buckets[0];
-            if (carrierCodesMap[currentIcaoCarrierCode] === undefined) {
-                carrierCodesMap[currentIcaoCarrierCode] = {};
-                carrierCodesMap[currentIcaoCarrierCode].doc_count = 1;
-                carrierCodesMap[currentIcaoCarrierCode]['1'] = {};
-                carrierCodesMap[currentIcaoCarrierCode]['1'].value = bucket['1'].value;
-                carrierCodesMap[currentIcaoCarrierCode]['3'] = {};
-                carrierCodesMap[currentIcaoCarrierCode]['3'].buckets = [];
-                carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(bucketFlight);
-            }
+            if (carrierCodesMap[icaoCarrierCode] === undefined) {
 
-            // if this carrier code already exists, we add the current bucket into it
-            else {
+                // if this carrier code doesn't already exist, we add it
+
+                carrierCodesMap[icaoCarrierCode] = {};
+                carrierCodesMap[icaoCarrierCode].doc_count = 1;
+                carrierCodesMap[icaoCarrierCode]['1'] = {};
+                carrierCodesMap[icaoCarrierCode]['1'].value = bucket['1'].value;
+                carrierCodesMap[icaoCarrierCode]['3'] = {};
+                carrierCodesMap[icaoCarrierCode]['3'].buckets = [];
+                carrierCodesMap[icaoCarrierCode]['3'].buckets.push(bucketFlight);
+
+            } else {
+
+                // if this carrier code already exists, we add the current bucket into it
 
                 let replaced = false;
                 let old = false;
                 // if this new flight happens to be at the same time as another one, we'll only add if it has a new "status code"
                 // if it has a smaller "status code", we'll add it to another list that we'll use later in the tool tip
-                _.each(carrierCodesMap[currentIcaoCarrierCode]['3'].buckets, function (current, i) {
+                _.each(carrierCodesMap[icaoCarrierCode]['3'].buckets, function (current, i) {
                     if (current.key === bucketFlight.key) {
                         // we have a match (a simultaneous flight)
                         let newFlightMaxStatusCode = bucketFlight['1'].value;
                         let currentFlightMaxStatusCode = current['1'].value;
                         if (newFlightMaxStatusCode > currentFlightMaxStatusCode) {
                             // the new flight has a bigger "status code" ==> we override the already existing one
-                            carrierCodesMap[currentIcaoCarrierCode]['3'].buckets[i] = bucketFlight;
+                            carrierCodesMap[icaoCarrierCode]['3'].buckets[i] = bucketFlight;
                             replaced = true;
                         } else {
                             old = true;
                         }
-                        $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey], current);
+                        $scope.pushIfNotPresent(simFlights[displayKey], current);
+                        console.log("1) Flight pushed in simultaneous flights for key " + displayKey + ": " + current.toString())
                     }
                 });
                 if (!replaced && !old) {
-                    carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(bucketFlight);
+                    carrierCodesMap[icaoCarrierCode]['3'].buckets.push(bucketFlight);
                 }
-                carrierCodesMap[currentIcaoCarrierCode].doc_count++;
+                carrierCodesMap[icaoCarrierCode].doc_count++;
             }
 
-            carrierCodesMap[currentIcaoCarrierCode].key = displayKey;
-            bucketFlight.carrierCode = currentIcaoCarrierCode;
+            carrierCodesMap[icaoCarrierCode].key = displayKey;
+            bucketFlight.carrierCode = icaoCarrierCode;
             bucketFlight.iataObjectId = iataObjectId;
-            bucketFlight.currentFlightNumber = currentIcaoFlightNumber;
+            bucketFlight.currentFlightNumber = icaoFlightNumber;
             bucketFlight.departureStation = departureStation;
             bucketFlight.displayKey = displayKey;
             bucketFlight.iataCarrierCode = iataCarrierCode;
@@ -267,7 +270,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             bucketFlight.apiPush = apiPush;
 
             // We keep track of all simultaneous flights by adding them to this list (if not already added)
-            $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey], bucketFlight);
+            $scope.pushIfNotPresent(simFlights[displayKey], bucketFlight);
 
         });
         let result = [];
@@ -275,8 +278,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             result.push(carrierCodesMap[i]);
         }
         $scope.agg = result;
+        $scope.additionalSimultaneousFlights = simFlights;
 
-        $scope.additionalSimultaneousFlights = additionalSimultaneousFlights;
         return result;
     };
 
@@ -668,21 +671,23 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     scope._resizeChecker.destroy();
                 });
 
-                // --------------------------------------------------------
-                // FIXME Emmanuel GIRE => ce code ne fonctionne pas :
+                /*
+                                // --------------------------------------------------------
+                                // FIXME Emmanuel GIRE => ce code ne fonctionne pas :
 
-                // Add tooltips to the y-axis labels to display the full 'viewBy' field
-                // - useful for cases where a long text value has been cropped.
-                // NB. requires z-index set in CSS so that hover is picked up on label.
-                const yAxisLabelDivs = $('.flot-y-axis', angular.element(element)).find('.flot-tick-label');
-                _.each(laneIds, (labelId, i) => {
-                    const labelText = labelId;
-                    let labelDiv = $(yAxisLabelDivs[i]);
-                    labelDiv.attr('title', labelText);
-                    // console.log('DIV axisY : ' + labelDiv.title)
-                    // console.log('$(yAxisLabelDivs['+i+']='+labelDiv.name);
-                });
-                // --------------------------------------------------------
+                                // Add tooltips to the y-axis labels to display the full 'viewBy' field
+                                // - useful for cases where a long text value has been cropped.
+                                // NB. requires z-index set in CSS so that hover is picked up on label.
+                                const yAxisLabelDivs = $('.flot-y-axis', angular.element(element)).find('.flot-tick-label');
+                                _.each(laneIds, (labelId, i) => {
+                                    const labelText = labelId;
+                                    let labelDiv = $(yAxisLabelDivs[i]);
+                                    labelDiv.attr('title', labelText);
+                                    // console.log('DIV axisY : ' + labelDiv.title)
+                                    // console.log('$(yAxisLabelDivs['+i+']='+labelDiv.name);
+                                });
+                                // --------------------------------------------------------
+                */
 
 
                 // Show tooltips on point hover.
@@ -738,14 +743,14 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     }
                 });
 
-/*
-                element.bind('mousedown',()=> {
+                /*
+                                element.bind('mousedown',()=> {
 
-                    // window.alert('click');
-                    // element.unbind('mousemove')
-                    // element.unbind('plotselected');
-                })
-*/
+                                    // window.alert('click');
+                                    // element.unbind('mousemove')
+                                    // element.unbind('plotselected');
+                                })
+                */
                 // element.unbind('plothover');
                 element.unbind('plotselected');
 
