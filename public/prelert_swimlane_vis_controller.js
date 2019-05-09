@@ -130,11 +130,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             // Value examples:
             // 20181207_LGL9563_ELLX/20181207_LG9563_LUX/Luxair/LG
             // 20181207_THY7NP_ELLX/null/Turkish Airlines/TK
-
             // Since 2019-01-25 (for LUX DEMO):
             // 20190125_TAP694_LPPT/null/TAP Portugal/TP/LIS-LUX/PNR:Missing-API:Missing/ATD:2019-01-25T13:47:00.000Z/ATA:2019-01-25T13:47:00.000Z/ETD:2019-01-25T13:47:00.000Z/flightStatus:ATC_ACTIVATED/PNRPUSH:2019-01-25T13:47:00.000Z_APIPUSH:2019-01-25T13:47:00.000Z
-
-            // console.log('bucket.key=' + bucket.key);
 
             // extract Icao Carrier Code etc
             let splitBucketKey = bucket.key.split('/');
@@ -151,8 +148,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             let flightState;
             let pnrPush;
             let apiPush;
-
             let iataFlightNumber;
+
             if (iataObjectId !== undefined && iataObjectId !== 'null') {
                 const iataSplit = iataObjectId.split("_");
                 if (iataSplit.length > 1) {
@@ -168,7 +165,6 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 pnrStatus = statusesSplit[0].substring(4);
                 apiStatus = statusesSplit[1].substring(4);
             }
-
             const atd = splitBucketKey[6];
             if (atd !== undefined && atd.length > 0) {
                 const atdSplit = atd.split("=");
@@ -184,131 +180,95 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 const etdSplit = etd.split("=");
                 etdGmt = new Date(etdSplit[1]);
             }
-
             const flightStatus = splitBucketKey[9];
             if (flightStatus !== undefined && flightStatus.length > 0) {
                 const flightStatusSplit = flightStatus.split("=")
                 flightState = flightStatusSplit[1];
             }
-
             let pnrPushSection = splitBucketKey[10];
             if (pnrPushSection !== undefined && pnrPushSection.length > 0) {
-                // "PNRPUSH:<value>"
+                // "PNRPUSH=<value>"
                 let pnrpushSplit = pnrPushSection.split("=");
                 pnrPush = new Date(pnrpushSplit[1]);
             }
             let apiPushSection = splitBucketKey[11];
             if (apiPushSection !== undefined && apiPushSection.length > 0) {
-                // "APIPUSH:<value>"
+                // "APIPUSH=<value>"
                 let apiPushSplit = apiPushSection.split("=");
                 apiPush = new Date(apiPushSplit[1]);
             }
-
             const currentIcaoCarrierCode = icaoObjectId.split('_')[1].slice(0, 3);
             const currentIcaoFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
             const departureStation = icaoObjectId.split('_')[2];
 
             $scope.lineLabels.set(currentIcaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, currentIcaoCarrierCode, carrierName));
-
             let displayKey = $scope.lineLabels.get(currentIcaoCarrierCode);
 
-            // if this carrier code doesn't already exist, we add it
-            if (carrierCodesMap[currentIcaoCarrierCode] === undefined) {
+            if (additionalSimultaneousFlights[displayKey] === undefined) {
                 additionalSimultaneousFlights[displayKey] = [];
+            }
+
+            // if this carrier code doesn't already exist, we add it
+            let bucketFlight = bucket['3'].buckets[0];
+            if (carrierCodesMap[currentIcaoCarrierCode] === undefined) {
                 carrierCodesMap[currentIcaoCarrierCode] = {};
-                carrierCodesMap[currentIcaoCarrierCode].key = displayKey;
                 carrierCodesMap[currentIcaoCarrierCode].doc_count = 1;
-                carrierCodesMap[currentIcaoCarrierCode]['3'] = {};
                 carrierCodesMap[currentIcaoCarrierCode]['1'] = {};
                 carrierCodesMap[currentIcaoCarrierCode]['1'].value = bucket['1'].value;
+                carrierCodesMap[currentIcaoCarrierCode]['3'] = {};
                 carrierCodesMap[currentIcaoCarrierCode]['3'].buckets = [];
-
-                // the following fields wouldn't normally exist, be we add them to be shown in tooltip
-                bucket['3'].buckets[0].carrierCode = currentIcaoCarrierCode;
-                bucket['3'].buckets[0].iataObjectId = iataObjectId;
-                bucket['3'].buckets[0].currentFlightNumber = currentIcaoFlightNumber;
-                bucket['3'].buckets[0].departureStation = departureStation;
-                bucket['3'].buckets[0].displayKey = displayKey;
-                bucket['3'].buckets[0].iataCarrierCode = iataCarrierCode;
-                bucket['3'].buckets[0].routing = routing;
-
-                bucket['3'].buckets[0].iataFlightNumber = iataFlightNumber;
-
-                bucket['3'].buckets[0].pnrStatus = pnrStatus;
-                bucket['3'].buckets[0].apiStatus = apiStatus;
-                bucket['3'].buckets[0].atdGmt = atdGmt;
-                bucket['3'].buckets[0].ataGmt = ataGmt;
-                bucket['3'].buckets[0].etdGmt = etdGmt;
-                bucket['3'].buckets[0].flightState = flightState;
-                bucket['3'].buckets[0].pnrPush = pnrPush;
-                bucket['3'].buckets[0].apiPush = apiPush;
-
-                carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(bucket['3'].buckets[0]);
+                carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(bucketFlight);
             }
+
             // if this carrier code already exists, we add the current bucket into it
             else {
 
-                if (additionalSimultaneousFlights[displayKey] === undefined) {
-                    additionalSimultaneousFlights[displayKey] = [];
-                }
-
-                bucket['3'].buckets[0].carrierCode = currentIcaoCarrierCode;
-                bucket['3'].buckets[0].currentFlightNumber = currentIcaoFlightNumber;
-                bucket['3'].buckets[0].departureStation = departureStation;
-                bucket['3'].buckets[0].iataObjectId = iataObjectId;
-                bucket['3'].buckets[0].displayKey = displayKey;
-                bucket['3'].buckets[0].iataCarrierCode = iataCarrierCode;
-                bucket['3'].buckets[0].routing = routing;
-
-                bucket['3'].buckets[0].iataFlightNumber = iataFlightNumber;
-
-                bucket['3'].buckets[0].pnrStatus = pnrStatus;
-                bucket['3'].buckets[0].apiStatus = apiStatus;
-                bucket['3'].buckets[0].atdGmt = atdGmt;
-                bucket['3'].buckets[0].ataGmt = ataGmt;
-                bucket['3'].buckets[0].etdGmt = etdGmt;
-                bucket['3'].buckets[0].flightState = flightState;
-                bucket['3'].buckets[0].pnrPush = pnrPush;
-                bucket['3'].buckets[0].apiPush = apiPush;
-
-                carrierCodesMap[currentIcaoCarrierCode].key = displayKey;
-
                 let replaced = false;
                 let old = false;
-
-                let newFlight = bucket['3'].buckets[0];
-
                 // if this new flight happens to be at the same time as another one, we'll only add if it has a new "status code"
                 // if it has a smaller "status code", we'll add it to another list that we'll use later in the tool tip
                 _.each(carrierCodesMap[currentIcaoCarrierCode]['3'].buckets, function (current, i) {
-
-                    // we have a match (a simultaneous flight)
-
-                    if (current.key === newFlight.key) {
-                        // console.log('----------------- Simultaneous flight ' + currentIcaoCarrierCode + ':');
-                        // console.log('Current : ' + current.key + ':' + current.currentFlightNumber);
-                        // console.log('New     : ' + newFlight.key + ':' + newFlight.currentFlightNumber);
-                        // the new flight has a bigger "status code" ==> we override the already existing one
-                        let newFlightMaxStatusCode = newFlight['1'].value;
+                    if (current.key === bucketFlight.key) {
+                        // we have a match (a simultaneous flight)
+                        let newFlightMaxStatusCode = bucketFlight['1'].value;
                         let currentFlightMaxStatusCode = current['1'].value;
-                        // console.log('Flight ' + newFlightNumber + ' : newFlightMaxStatusCode='+newFlightMaxStatusCode + '/currentFlightMaxStatusCode='+currentFlightMaxStatusCode);
                         if (newFlightMaxStatusCode > currentFlightMaxStatusCode) {
-                            carrierCodesMap[currentIcaoCarrierCode]['3'].buckets[i] = newFlight;
+                            // the new flight has a bigger "status code" ==> we override the already existing one
+                            carrierCodesMap[currentIcaoCarrierCode]['3'].buckets[i] = bucketFlight;
                             replaced = true;
                         } else {
                             old = true;
                         }
-                        // we keep track of all simultaneous flights by adding them to this list (if not already added)
                         $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey], current);
-                        $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey], newFlight);
                     }
                 });
-
                 if (!replaced && !old) {
-                    carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(newFlight);
+                    carrierCodesMap[currentIcaoCarrierCode]['3'].buckets.push(bucketFlight);
                 }
                 carrierCodesMap[currentIcaoCarrierCode].doc_count++;
             }
+
+            carrierCodesMap[currentIcaoCarrierCode].key = displayKey;
+            bucketFlight.carrierCode = currentIcaoCarrierCode;
+            bucketFlight.iataObjectId = iataObjectId;
+            bucketFlight.currentFlightNumber = currentIcaoFlightNumber;
+            bucketFlight.departureStation = departureStation;
+            bucketFlight.displayKey = displayKey;
+            bucketFlight.iataCarrierCode = iataCarrierCode;
+            bucketFlight.routing = routing;
+            bucketFlight.iataFlightNumber = iataFlightNumber;
+            bucketFlight.pnrStatus = pnrStatus;
+            bucketFlight.apiStatus = apiStatus;
+            bucketFlight.atdGmt = atdGmt;
+            bucketFlight.ataGmt = ataGmt;
+            bucketFlight.etdGmt = etdGmt;
+            bucketFlight.flightState = flightState;
+            bucketFlight.pnrPush = pnrPush;
+            bucketFlight.apiPush = apiPush;
+
+            // We keep track of all simultaneous flights by adding them to this list (if not already added)
+            $scope.pushIfNotPresent(additionalSimultaneousFlights[displayKey], bucketFlight);
+
         });
         let result = [];
         for (let i in carrierCodesMap) {
