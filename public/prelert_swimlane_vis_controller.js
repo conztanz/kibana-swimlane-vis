@@ -101,8 +101,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
     $scope.pushIfNotPresent = function (list, bucket) {
         let present = false;
         _.each(list, function (current) {
-            // if (current['1'].value === bucket['1'].value) {
-            if (current.iataObjectId === bucket.iataObjectId) {
+            if (current.icaoObjectId === bucket.icaoObjectId) {
                 present = true;
             }
         });
@@ -235,14 +234,16 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         let newFlightMaxStatusCode = bucketFlight['1'].value;
                         let currentFlightMaxStatusCode = current['1'].value;
                         if (newFlightMaxStatusCode > currentFlightMaxStatusCode) {
+
+                            console.log('***************** Overriden : '+bucketFlight['1'].value)
                             // the new flight has a bigger "status code" ==> we override the already existing one
                             carrierCodesMap[icaoCarrierCode]['3'].buckets[i] = bucketFlight;
                             replaced = true;
                         } else {
                             old = true;
                         }
-                        $scope.pushIfNotPresent(simFlights[displayKey], current);
-                        console.log("1) Flight pushed in simultaneous flights for key " + displayKey + ": " + current.toString())
+                        // $scope.pushIfNotPresent(simFlights[displayKey], current);
+                        // console.log("1) Flight pushed in simultaneous flights for key " + displayKey + ": " + current[1])
                     }
                 });
                 if (!replaced && !old) {
@@ -254,6 +255,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             carrierCodesMap[icaoCarrierCode].key = displayKey;
             bucketFlight.carrierCode = icaoCarrierCode;
             bucketFlight.iataObjectId = iataObjectId;
+            bucketFlight.icaoObjectId = icaoObjectId;
             bucketFlight.currentFlightNumber = icaoFlightNumber;
             bucketFlight.departureStation = departureStation;
             bucketFlight.displayKey = displayKey;
@@ -268,6 +270,10 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             bucketFlight.flightState = flightState;
             bucketFlight.pnrPush = pnrPush;
             bucketFlight.apiPush = apiPush;
+
+            if('20190508_LGL7754_EGSS' == icaoObjectId) {
+                console.log('***************************************' + icaoObjectId + ' found')
+            }
 
             // We keep track of all simultaneous flights by adding them to this list (if not already added)
             $scope.pushIfNotPresent(simFlights[displayKey], bucketFlight);
