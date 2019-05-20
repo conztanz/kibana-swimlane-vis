@@ -60,7 +60,8 @@ function PrelertSwimlaneProvider(Private) {
         tooltipNumberFormat: '0.0',
         showLegend: true,
         apiPnrBaseUrl: "",
-        alphabetSortLaneLabels: 'off'
+        alphabetSortLaneLabels: 'off',
+        blocksWidth: 1
       },
       template,
       intervalOptions: [

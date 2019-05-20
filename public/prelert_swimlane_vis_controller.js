@@ -461,7 +461,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         points: {
                             fillColor: thresholdBand.color,
                             show: true,
-                            radius: 5,
+                            radius: scope.vis.params.blocksWidth,
                             symbol: drawChartSymbol,
                             lineWidth: 1
                         },
@@ -478,7 +478,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     points: {
                         fillColor: scope.vis.params.unknownThresholdColor,
                         show: true,
-                        radius: 5,
+                        radius: scope.vis.params.blocksWidth,
                         symbol: drawChartSymbol,
                         lineWidth: 1
                     },
@@ -749,26 +749,6 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     }
                 });
 
-                /*
-                                element.bind('mousedown',()=> {
-
-                                    // window.alert('click');
-                                    // element.unbind('mousemove')
-                                    // element.unbind('plotselected');
-                                })
-                */
-                // element.unbind('plothover');
-                element.unbind('plotselected');
-
-//                 element.bind('plothover', (event, [pos, item]) => {
-// console.log('event='+event+' / pos='+pos+' / '+ 'item='+item)
-//                 }
-                element.bind('plotselected', (event, ranges) => {
-                    //element.unbind('plotselected');
-                    // window.alert('Zoom is disabled')
-                    // $scope.$emit('plotunselected')
-                    // $scope.$emit('mousedown')
-                });
                 // Set the Kibana timefilter if the user selects a range on the chart.
                 /*
                                 element.unbind('plotselected');
