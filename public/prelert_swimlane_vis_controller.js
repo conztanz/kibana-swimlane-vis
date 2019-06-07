@@ -586,7 +586,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         mode: 'x'
                     },
                     selection: {
-                        mode: null,
+                        mode: 'x',
                         color: '#bbbbbb'
                     }
                 };
@@ -750,28 +750,29 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 });
 
                 // Set the Kibana timefilter if the user selects a range on the chart.
-                /*
-                                element.unbind('plotselected');
-                                element.bind('plotselected', (event, ranges) => {
-                                    let zoomFrom = ranges.xaxis.from;
-                                    let zoomTo = ranges.xaxis.to;
+                element.unbind('plotselected');
+                element.bind('plotselected', (event, ranges) => {
+                    let zoomFrom = ranges.xaxis.from;
+                    let zoomTo = ranges.xaxis.to;
 
-                                    // Aggregation returns points at start of bucket, so make sure the time
-                                    // range zoomed in to covers the full aggregation interval.
-                                    const timeAgg = scope.vis.aggs.bySchemaName.timeSplit[0];
-                                    const aggIntervalMs = timeAgg.buckets.getInterval().asMilliseconds();
+                    // Aggregation returns points at start of bucket, so make sure the time
+                    // range zoomed in to covers the full aggregation interval.
+                    const timeAgg = scope.vis.aggs.bySchemaName.timeSplit[0];
+                    const aggIntervalMs = timeAgg.buckets.getInterval().asMilliseconds();
 
-                                    // Add a bit of extra padding before start time.
-                                    zoomFrom = zoomFrom - (aggIntervalMs / 4);
-                                    zoomTo = zoomTo + aggIntervalMs;
+                    // Add a bit of extra padding before start time.
+                    zoomFrom = zoomFrom - (aggIntervalMs / 4);
+                    zoomTo = zoomTo + aggIntervalMs;
 
-                                    timefilter.time.from = moment.utc(zoomFrom);
-                                    timefilter.time.to = moment.utc(zoomTo);
-                                    timefilter.time.mode = 'absolute';
-                                    timefilter.update();
+                    timefilter.time.from = moment.utc(zoomFrom);
+                    timefilter.time.to = moment.utc(zoomTo);
+                    timefilter.time.mode = 'absolute';
+                    timefilter.update();
 
-                                });
-                */
+                });
+
+
+
                 element.unbind('plotclick');
                 element.bind('plotclick', function (event, ranges, item) {
                     // if the item is null then the user didn't click on a rectangle, it is probably a resize, so we just don't do anything
