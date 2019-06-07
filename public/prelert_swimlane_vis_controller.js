@@ -234,8 +234,6 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         let newFlightMaxStatusCode = bucketFlight['1'].value;
                         let currentFlightMaxStatusCode = current['1'].value;
                         if (newFlightMaxStatusCode > currentFlightMaxStatusCode) {
-
-                            console.log('***************** Overriden : '+bucketFlight['1'].value)
                             // the new flight has a bigger "status code" ==> we override the already existing one
                             carrierCodesMap[icaoCarrierCode]['3'].buckets[i] = bucketFlight;
                             replaced = true;
@@ -270,10 +268,6 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             bucketFlight.flightState = flightState;
             bucketFlight.pnrPush = pnrPush;
             bucketFlight.apiPush = apiPush;
-
-            if('20190508_LGL7754_EGSS' == icaoObjectId) {
-                console.log('***************************************' + icaoObjectId + ' found')
-            }
 
             // We keep track of all simultaneous flights by adding them to this list (if not already added)
             $scope.pushIfNotPresent(simFlights[displayKey], bucketFlight);
