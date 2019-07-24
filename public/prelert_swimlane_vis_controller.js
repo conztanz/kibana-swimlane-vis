@@ -788,13 +788,14 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             }
 
             /**
-             * Originally, this function was used to map ranges of values to a status
-             * But now we have a direct mapping (2 ==> scheduled)  see we just return the same value (the function is useless )
+             * Map ranges of values to a status
+             *
              * @param value
              * @returns {*}
              */
             function getSeriesIndex(value) {
-                return value;
+                console.log('====> getSeriesIndex('+value+')');
+                return value / 10;
             }
 
             function drawChartSymbol(ctx, x, y, radius) {
@@ -949,26 +950,32 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
          * @param status
          */
         function receptionStatusLabel(status) {
+            // console.log('status:'+status)
             switch (status) {
-                case 1:
-                    return "To be scheduled";
-                case 2:
-                    return "Scheduled";
-                case 3:
-                    return "Cancelled";
-                case 4:
-                    return "In time";
-                case 5:
-                    return "Expected";
-                case 6:
-                    return "Delayed";
-                case 7:
-                    // Transition period : uncomment "Too late" if we implement reception status computation depending
-                    // on arrival date time
-                    // return "Too late";
-                    return "Missing";
-                case 8:
-                    return "Missing";
+                case 10:
+                    return "To be scheduled";   // c9c9c9
+                case 20:
+                    return "Scheduled";         // c9c9c9
+                case 30:
+                    return "Cancelled";         // 000000
+                case 40:
+                    return "In time";           // 00b050
+                case 50:
+                    return "In time - Ko";      // 305496
+                case 60:
+                    return "Expected";          // 808080
+                case 70:
+                    return "Pending";           // ff9900
+                case 80:
+                    return "Delayed";           // 00b0f0
+                case 90:
+                    return "Delayed - Ko";      // 00b0f0
+                case 100:
+                    return "Too late";          // 7030a0
+                case 110:
+                    return "Too late Ko";       // 7030a0
+                case 120:
+                    return "Missing";           // ff0000
             }
         }
 
