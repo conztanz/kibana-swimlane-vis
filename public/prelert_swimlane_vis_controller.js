@@ -961,7 +961,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 case 40:
                     return "In time";           // 00b050
                 case 50:
-                    return "In time - Ko";      // 305496
+                    return "In time KO";      // 305496
                 case 60:
                     return "Expected";          // 808080
                 case 70:
@@ -969,11 +969,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 case 80:
                     return "Delayed";           // 00b0f0
                 case 90:
-                    return "Delayed - Ko";      // 00b0f0
+                    return "Delayed KO";      // 00b0f0
                 case 100:
                     return "Too late";          // 7030a0
                 case 110:
-                    return "Too late Ko";       // 7030a0
+                    return "Too late KO";       // 7030a0
                 case 120:
                     return "Missing";           // ff0000
             }
