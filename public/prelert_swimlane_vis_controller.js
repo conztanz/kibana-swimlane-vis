@@ -901,7 +901,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     contents += receptionStatusLabel(flight['1'].value);
                     if (flight.atdGmt !== undefined) {
                         // contents += '<br/>ATD : ' + flight.atdGmt;
-                        contents += '<br/>ATD : ' + formatFunctionalDateForTooltip(flight.atdGmt);
+                        contents += '<br/>ABN : ' + formatFunctionalDateForTooltip(flight.atdGmt);
                     } else if (flight.etdGmt !== undefined) {
                         contents += '<br/>ETD : ' + formatFunctionalDateForTooltip(flight.etdGmt);
                     }
