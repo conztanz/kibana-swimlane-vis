@@ -28,6 +28,20 @@ import {ResizeCheckerProvider} from 'ui/resize_checker';
 import {uiModules} from 'ui/modules';
 
 const module = uiModules.get('prelert_swimlane_vis/prelert_swimlane_vis', ['kibana']);
+const seriesIndexMap = [];
+seriesIndexMap[10] = 1;
+seriesIndexMap[15] = 2;
+seriesIndexMap[20] = 3;
+seriesIndexMap[30] = 4;
+seriesIndexMap[40] = 5;
+seriesIndexMap[50] = 6;
+seriesIndexMap[60] = 7;
+seriesIndexMap[70] = 8;
+seriesIndexMap[80] = 9;
+seriesIndexMap[90] = 10;
+seriesIndexMap[100] = 11;
+seriesIndexMap[110] = 12;
+seriesIndexMap[120] = 13;
 
 function formatFunctionalDateForTooltip(dateValue) {
     return moment(dateValue).format('YYYY-MM-DD HH:mm');
@@ -766,7 +780,6 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 });
 
 
-
                 element.unbind('plotclick');
                 element.bind('plotclick', function (event, ranges, item) {
                     // if the item is null then the user didn't click on a rectangle, it is probably a resize, so we just don't do anything
@@ -794,8 +807,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
              * @returns {*}
              */
             function getSeriesIndex(value) {
-                console.log('====> getSeriesIndex('+value+')');
-                return value / 10;
+                console.log('====> getSeriesIndex(' + value + ')');
+                return seriesIndexMap[value];
             }
 
             function drawChartSymbol(ctx, x, y, radius) {
@@ -954,6 +967,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             switch (status) {
                 case 10:
                     return "To be scheduled";   // c9c9c9
+                case 15:
+                    return "Non commercial";    // 901b00
                 case 20:
                     return "Scheduled";         // c9c9c9
                 case 30:
