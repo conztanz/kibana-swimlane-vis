@@ -28,6 +28,20 @@ import {ResizeCheckerProvider} from 'ui/resize_checker';
 import {uiModules} from 'ui/modules';
 
 const module = uiModules.get('prelert_swimlane_vis/prelert_swimlane_vis', ['kibana']);
+const seriesIndexMap = [];
+seriesIndexMap[10] = 1;
+seriesIndexMap[15] = 2;
+seriesIndexMap[20] = 3;
+seriesIndexMap[30] = 4;
+seriesIndexMap[40] = 5;
+seriesIndexMap[50] = 6;
+seriesIndexMap[60] = 7;
+seriesIndexMap[70] = 8;
+seriesIndexMap[80] = 9;
+seriesIndexMap[90] = 10;
+seriesIndexMap[100] = 11;
+seriesIndexMap[110] = 12;
+seriesIndexMap[120] = 13;
 
 function formatFunctionalDateForTooltip(dateValue) {
     return moment(dateValue).format('YYYY-MM-DD HH:mm');
@@ -37,6 +51,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
     $scope.lineLabels = new Map();
     $scope.prelertLogoSrc = logo;
+    $scope.undeclaredFlights = new Map();
 
     $scope.$watchMulti(['esResponse', 'vis.params'], function ([resp]) {
 
@@ -98,6 +113,12 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             attributeOldValue: true
         });
     }
+
+    /**
+     *
+     * @param list
+     * @param bucket
+     */
     $scope.pushIfNotPresent = function (list, bucket) {
         let present = false;
         _.each(list, function (current) {
@@ -110,14 +131,24 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
         }
     };
 
+    /**
+     *
+     * @param iataCarrierCode
+     * @param iataFlightNumber
+     * @param icaoCode
+     * @param carrierName
+     * @returns {string}
+     */
     $scope.buildLineLabel = function (iataCarrierCode, iataFlightNumber, icaoCode, carrierName) {
-        // return carrierName + '<br>(' + icaoCode
-        //     + (iataCarrierCode !== undefined ? '/' + iataCarrierCode : '')
-        //     + ')';
         return (iataCarrierCode !== undefined ? iataCarrierCode + ' ' : '')
             + '(' + icaoCode + '-' + carrierName + ')';
     };
 
+    /**
+     *
+     * @param buckets
+     * @returns {[]}
+     */
     $scope.aggregateByCarrierCode = function (buckets) {
 
         // console.log('' + buckets.length + ' buckets')
@@ -128,9 +159,9 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
 
             // In index pattern's, the scripted field named "SwimlaneLineDetails" is used as bucket key (= aggregation "view by" term).
             // Value examples:
-            // 20190509_SWR78K_LSZH/20190509_LX0754_ZRH/Swiss International Air Lines/LX/ZRH-LUX/PNR=Received on time-API=Expected/ATD=2019-05-09T12:43:00.000Z/ATA=2019-05-09T13:31:00.000Z/ETD=2019-05-09T11:40:00.000Z/flightStatus=ATC_ACTIVATED/PNRPUSH=2019-05-09T11:58:16.147Z/
-            // 20190509_LGL8014_LFPG/20190509_LG8014_CDG/Luxair/LG/CDG-LUX/PNR=Received on time-API=Missing/ATD=2019-05-09T11:33:00.000Z/ATA=2019-05-09T12:09:00.000Z/ETD=2019-05-09T11:26:00.000Z/flightStatus=TERMINATED/PNRPUSH=2019-05-09T11:24:26.001Z/
-            // 20190509_LGL9736_EDDM/null/Luxair/LG/MUC-LUX/PNR=Scheduled-API=Scheduled///ETD=2019-05-09T14:27:00.000Z/flightStatus=FILED//
+            // 20190509_SWR78K_LSZH/20190509_LX0754_ZRH/Swiss International Air Lines/LX/ZRH-LUX/PNR=Received on time-API=Expected/ATD=2019-05-09T12:43:00.000Z/ATA=2019-05-09T13:31:00.000Z/ETD=2019-05-09T11:40:00.000Z/flightStatus=ATC_ACTIVATED/PNRPUSH=2019-05-09T11:58:16.147Z/false
+            // 20190509_LGL8014_LFPG/20190509_LG8014_CDG/Luxair/LG/CDG-LUX/PNR=Received on time-API=Missing/ATD=2019-05-09T11:33:00.000Z/ATA=2019-05-09T12:09:00.000Z/ETD=2019-05-09T11:26:00.000Z/flightStatus=TERMINATED/PNRPUSH=2019-05-09T11:24:26.001Z/false
+            // 20190509_LGL9736_EDDM/null/Luxair/LG/MUC-LUX/PNR=Scheduled-API=Scheduled///ETD=2019-05-09T14:27:00.000Z/flightStatus=FILED//true
 
             // extract Icao Carrier Code etc
             let splitBucketKey = bucket.key.split('/');
@@ -148,6 +179,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             let pnrPush;
             let apiPush;
             let iataFlightNumber;
+            let undeclared = false;
 
             if (iataObjectId !== undefined && iataObjectId !== 'null') {
                 const iataSplit = iataObjectId.split("_");
@@ -200,14 +232,24 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             const icaoFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
             const departureStation = icaoObjectId.split('_')[2];
 
-            $scope.lineLabels.set(icaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, icaoCarrierCode, carrierName));
+            let bucketFlight = bucket['3'].buckets[0];
+
+            // undeclared?
+            if (splitBucketKey.length > 12) {
+                undeclared = splitBucketKey[12].split('=')[1] == 'true';
+            }
+
+            let lineLabel = $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, icaoCarrierCode, carrierName);
+            if (undeclared) lineLabel += "    #";
+            $scope.undeclaredFlights.set(lineLabel, undeclared);
+
+            $scope.lineLabels.set(icaoCarrierCode, lineLabel);
             let displayKey = $scope.lineLabels.get(icaoCarrierCode);
 
             if (simFlights[displayKey] === undefined) {
                 simFlights[displayKey] = [];
             }
 
-            let bucketFlight = bucket['3'].buckets[0];
             if (carrierCodesMap[icaoCarrierCode] === undefined) {
 
                 // if this carrier code doesn't already exist, we add it
@@ -268,6 +310,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             bucketFlight.flightState = flightState;
             bucketFlight.pnrPush = pnrPush;
             bucketFlight.apiPush = apiPush;
+            bucketFlight.undeclared = undeclared;
 
             // We keep track of all simultaneous flights by adding them to this list (if not already added)
             $scope.pushIfNotPresent(simFlights[displayKey], bucketFlight);
@@ -500,19 +543,18 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 }
 
                 let laneIndex = 0;
-                _.each(chartData, (bucketsForViewByValue, viewByValue) => {
 
-                    laneIndex = laneIds.indexOf(viewByValue);
-
+                // - bucketsForViewByValue contains the maxStatusCode
+                // - displayKey is the line label (and the line key as well)
+                _.each(chartData, (bucketsForViewByValue, displayKey) => {
+                    laneIndex = laneIds.indexOf(displayKey);
                     _.each(bucketsForViewByValue, (dataForTime, time) => {
                         const value = dataForTime.value;
-
                         const pointData = [];
                         pointData[0] = moment(Number(time));
                         pointData[1] = laneIndex + 0.5;
                         // Store the score in an additional object property for each point.
                         pointData[2] = {score: value};
-
                         const seriesIndex = getSeriesIndex(value);
                         allSeries[seriesIndex].data.push(pointData);
                     });
@@ -533,6 +575,29 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     latest = moment(bounds.max).valueOf();
                 }
 
+                // function undeclaredColorHook(plot, canvascontext, series) {
+                // series.color='#00ff00';
+                // series.yaxis.options.tickColor = '#0000aa';
+                // series.yaxis.options.color = '#0000ff';
+
+                // const yAxis = canvascontext.canvas.nextElementSibling.children[1].closest('.flot-tick-label')
+                // canvascontext.canvas.nextElementSibling.children[1].style.color = '#0000ff'
+                // console.log('yAxis='+yAxis)
+
+                /*                    console.log('=> undeclaredColorHook series.label=' + series.label);
+                                    _.each(series.yaxis.ticks, (tick) => {
+                                        tick.color = '#000099'
+                                    })*/
+
+                // }
+
+                /*
+                                function onCanvasDraw(plot, canvascontext) {
+                                    // console.log('=> onCanvasDraw')
+                                }
+                */
+
+                // See https://github.com/flot/flot/blob/master/API.md#plot-options
                 const options = {
                     xaxis: {
                         mode: 'time',
@@ -549,6 +614,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         min: _.isUndefined(earliest) ? null : earliest,
                         max: _.isUndefined(latest) ? null : latest,
                         color: '#d5d5d5'
+                        // color: '#ffffff'
                     },
                     yaxis: {
                         min: 0,
@@ -583,20 +649,26 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         mode: 'x',
                         color: '#bbbbbb'
                     }
+                    // ,
+                    // hooks : {
+                    //     drawSeries: [undeclaredColorHook],
+                    //     draw: [onCanvasDraw]
+                    // }
                 };
 
-                // Set the alternate lane marking color depending on whether Kibana dark theme is being used.
-                const alternateLaneColor = element.closest('.theme-dark').length === 0 ? '#f5f5f5' : '#4a4a4a';
+
+                // if(scope.undeclaredFlights[displayKey] !== undefined && scope.undeclaredFlights[displayKey] == true) {
+                //
+                // }
 
                 options.yaxis.max = laneIds.length;
                 options.yaxis.ticks = [];
                 options.grid.markings = [];
 
                 let yaxisMarking;
+
                 _.each(laneIds, (labelId, i) => {
-                    // const iataCarrierCode = labelId.toString().substring(0,2).fontsize(14)
-                    // const details = labelId.toString().substring(2).fontsize(8)
-                    // let labelText = iataCarrierCode + details;
+
                     let labelText = labelId;
 
                     // Crop 'viewBy' labels over 27 chars of more so that the y-axis labels don't take up too much width.
@@ -605,12 +677,17 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     const tick = [i + 0.5, labelText];
                     options.yaxis.ticks.push(tick);
 
-                    // Set up marking effects for each lane.
+                    // Set the alternate lane marking color depending on whether Kibana dark theme is being used.
+                    let laneColor = '#d5d5d5'
+                    let alternateLaneColor = element.closest('.theme-dark').length === 0 ? '#f5f5f5' : '#4a4a4a';
+
+                    // console.log(''+labelId+' - alternateLaneBackgroundColor='+alternateLaneBackgroundColor)
+                    // Set up marking / color effects for each lane.
                     if (i > 0) {
                         yaxisMarking = {};
                         yaxisMarking.from = i;
                         yaxisMarking.to = i + 0.03;
-                        options.grid.markings.push({yaxis: yaxisMarking, color: '#d5d5d5'});
+                        options.grid.markings.push({yaxis: yaxisMarking, color: laneColor});
                     }
 
                     if (i % 2 !== 0) {
@@ -620,6 +697,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                         options.grid.markings.push({yaxis: yaxisMarking, color: alternateLaneColor});
                     }
                 });
+
 
                 // Adjust height of element according to the number of lanes, allow for height of axis labels.
                 // Uses hardcoded height for each lane of 32px, with the chart symbols having a height of 28px.
@@ -655,13 +733,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 scope._resizeChecker = new ResizeChecker(angular.element(element).closest('.prl-swimlane-vis'));
                 scope._resizeChecker.on('resize', () => {
                     const placeholder = plot.getPlaceholder();
-
                     // somebody might have hidden us and we can't plot
                     // when we don't have the dimensions
                     if (placeholder.width() === 0 || placeholder.height() === 0) {
                         return;
                     }
-
                     plot.resize();
                     plot.setupGrid();
                     plot.draw();
@@ -732,6 +808,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                             const laneLabel = scope.lineLabels.get(currentIcaoCarrierCode);
                             showTooltip(item, laneLabel);
                         }
+
                     } else {
                         element.removeClass('prl-swimlane-vis-point-over ');
                         // $('.prl-swimlane-vis-tooltip').fadeOut(400);
@@ -766,7 +843,6 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 });
 
 
-
                 element.unbind('plotclick');
                 element.bind('plotclick', function (event, ranges, item) {
                     // if the item is null then the user didn't click on a rectangle, it is probably a resize, so we just don't do anything
@@ -794,8 +870,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
              * @returns {*}
              */
             function getSeriesIndex(value) {
-                console.log('====> getSeriesIndex('+value+')');
-                return value / 10;
+                console.log('====> getSeriesIndex(' + value + ')');
+                return seriesIndexMap[value];
             }
 
             function drawChartSymbol(ctx, x, y, radius) {
@@ -954,6 +1030,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             switch (status) {
                 case 10:
                     return "To be scheduled";   // c9c9c9
+                case 15:
+                    return "Non commercial";    // 901b00
                 case 20:
                     return "Scheduled";         // c9c9c9
                 case 30:
