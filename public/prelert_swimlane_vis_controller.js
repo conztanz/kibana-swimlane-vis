@@ -110,19 +110,20 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
         }
     };
 
-    $scope.buildLineLabel = function (iataCarrierCode, iataFlightNumber, icaoCode, carrierName) {
+    $scope.buildLineLabel = function (iataCarrierCode, iataFlightNumber, icaoCode, carrierName, carrierCategory) {
         // return carrierName + '<br>(' + icaoCode
         //     + (iataCarrierCode !== undefined ? '/' + iataCarrierCode : '')
         //     + ')';
-        return (iataCarrierCode !== undefined ? iataCarrierCode + ' ' : '')
-            + '(' + icaoCode + '-' + carrierName + ')';
+        return (carrierCategory !== undefined ? carrierCategory + ' - ' : '' ) +
+            (iataCarrierCode !== undefined ? iataCarrierCode + ' ' : '') +
+            '(' + icaoCode + '-' + carrierName + ')';
     };
 
     $scope.aggregateByCarrierCode = function (buckets) {
 
         // console.log('' + buckets.length + ' buckets')
         let carrierCodesMap = {};
-        let simFlights = new Array();
+        let simFlights = [];
         $scope.lineLabels.clear();
         _.each(buckets, function (bucket) {
 
@@ -141,6 +142,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             let routing = splitBucketKey[4];
             let pnrStatus = 'Scheduled';
             let apiStatus = 'Scheduled';
+            let stdGmt;
+            let staGmt;
             let atdGmt;
             let ataGmt;
             let etdGmt;
@@ -148,6 +151,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             let pnrPush;
             let apiPush;
             let iataFlightNumber;
+            let carrierCategory;
 
             if (iataObjectId !== undefined && iataObjectId !== 'null') {
                 const iataSplit = iataObjectId.split("_");
@@ -164,43 +168,64 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 pnrStatus = statusesSplit[0].substring(4);
                 apiStatus = statusesSplit[1].substring(4);
             }
-            const atd = splitBucketKey[6];
+            const std = splitBucketKey[6];
+            if (std !== undefined && std.length > 0) {
+                const stdSplit = std.split("=");
+                if (stdSplit.length === 2 && stdSplit[1].length && stdSplit[1] !== 'null') {
+                    stdGmt = new Date(stdSplit[1]);
+                }
+            }
+            const sta = splitBucketKey[7];
+            if (sta !== undefined && sta.length > 0) {
+                const staSplit = sta.split("=");
+                if (staSplit.length === 2 && staSplit[1].length && staSplit[1] !== 'null') {
+                    staGmt = new Date(staSplit[1]);
+                }
+            }
+            const atd = splitBucketKey[8];
             if (atd !== undefined && atd.length > 0) {
                 const atdSplit = atd.split("=");
                 atdGmt = new Date(atdSplit[1]);
             }
-            const ata = splitBucketKey[7];
+            const ata = splitBucketKey[9];
             if (ata !== undefined && ata.length > 0) {
                 const ataSplit = ata.split("=");
                 ataGmt = new Date(ataSplit[1]);
             }
-            const etd = splitBucketKey[8];
+            const etd = splitBucketKey[10];
             if (etd !== undefined && etd.length > 0) {
                 const etdSplit = etd.split("=");
                 etdGmt = new Date(etdSplit[1]);
             }
-            const flightStatus = splitBucketKey[9];
+            const flightStatus = splitBucketKey[11];
             if (flightStatus !== undefined && flightStatus.length > 0) {
-                const flightStatusSplit = flightStatus.split("=")
+                const flightStatusSplit = flightStatus.split("=");
                 flightState = flightStatusSplit[1];
             }
-            let pnrPushSection = splitBucketKey[10];
+            let pnrPushSection = splitBucketKey[12];
             if (pnrPushSection !== undefined && pnrPushSection.length > 0) {
                 // "PNRPUSH=<value>"
                 let pnrpushSplit = pnrPushSection.split("=");
                 pnrPush = new Date(pnrpushSplit[1]);
             }
-            let apiPushSection = splitBucketKey[11];
+            let apiPushSection = splitBucketKey[13];
             if (apiPushSection !== undefined && apiPushSection.length > 0) {
                 // "APIPUSH=<value>"
                 let apiPushSplit = apiPushSection.split("=");
                 apiPush = new Date(apiPushSplit[1]);
             }
+            const carrierCategorySection = splitBucketKey[14];
+            if (carrierCategorySection !== undefined && carrierCategorySection.length > 0 ) {
+                // "CATEGORY=<value>"
+                const carrierCategorySplit = carrierCategorySection.split("=");
+                carrierCategory = carrierCategorySplit[1];
+
+            }
             const icaoCarrierCode = icaoObjectId.split('_')[1].slice(0, 3);
             const icaoFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
             const departureStation = icaoObjectId.split('_')[2];
 
-            $scope.lineLabels.set(icaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, icaoCarrierCode, carrierName));
+            $scope.lineLabels.set(icaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, icaoCarrierCode, carrierName, carrierCategory));
             let displayKey = $scope.lineLabels.get(icaoCarrierCode);
 
             if (simFlights[displayKey] === undefined) {
@@ -262,12 +287,15 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             bucketFlight.iataFlightNumber = iataFlightNumber;
             bucketFlight.pnrStatus = pnrStatus;
             bucketFlight.apiStatus = apiStatus;
+            bucketFlight.stdGmt = stdGmt;
+            bucketFlight.staGmt = staGmt;
             bucketFlight.atdGmt = atdGmt;
             bucketFlight.ataGmt = ataGmt;
             bucketFlight.etdGmt = etdGmt;
             bucketFlight.flightState = flightState;
             bucketFlight.pnrPush = pnrPush;
             bucketFlight.apiPush = apiPush;
+            bucketFlight.carrierCategory = carrierCategory;
 
             // We keep track of all simultaneous flights by adding them to this list (if not already added)
             $scope.pushIfNotPresent(simFlights[displayKey], bucketFlight);
@@ -294,12 +322,12 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 if (bucket1.key > bucket2.key) return 1;
                 if (bucket1.key < bucket2.key) return -1;
                 return 0;
-            })
+            });
             $scope.agg = sorted;
             return sorted;
         }
         return buckets;
-    }
+    };
 
     /**
      *
@@ -701,9 +729,8 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                             if (label1 < label2) return -1;
                             if (label1 > label2) return 1;
                             return 0;
-                        }))
+                        }));
                     }
-
                     if (item) {
                         element.addClass('prl-swimlane-vis-point-over ');
                         if (scope._previousHoverPoint !== item.dataIndex) {
@@ -817,9 +844,9 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     if (additionalSimultaneousFlights[displayKey].length > 0) {
                         _.each(additionalSimultaneousFlights[displayKey], function (bucket) {
                             if (bucket.key === pointTime) {
-                                flights.push(bucket)
+                                flights.push(bucket);
                             }
-                        })
+                        });
                         if (flights.length > 0) {
                             return flights;
                         }
@@ -876,11 +903,11 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 _.each(simultaneousFlights, function (flight) {
 
                     if (flight.iataCarrierCode !== undefined) {
-                        contents += flight.iataCarrierCode
+                        contents += flight.iataCarrierCode;
                         if (flight.iataFlightNumber !== undefined) {
-                            contents += flight.iataFlightNumber
+                            contents += flight.iataFlightNumber;
                         }
-                        contents += ' / '
+                        contents += ' / ';
                     }
                     contents += flight.carrierCode + flight.currentFlightNumber;
                     if (flight.routing !== undefined) {
@@ -889,21 +916,31 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     contents += '<hr> ';
 
                     if (flight.pnrPush !== undefined) {
-                        contents += 'Push PNR : ' + formatFunctionalDateForTooltip(flight.pnrPush)
+                        contents += 'Push PNR : ' + formatFunctionalDateForTooltip(flight.pnrPush);
                         contents += '<br/>';
                     }
                     if (flight.apiPush !== undefined) {
-                        contents += 'Push API : ' + formatFunctionalDateForTooltip(flight.apiPush)
+                        contents += 'Push API : ' + formatFunctionalDateForTooltip(flight.apiPush);
                         contents += '<br/>';
                     }
 
                     // contents +=
                     contents += receptionStatusLabel(flight['1'].value);
+                    if (flight.scheduledDepartureDateTime !== undefined) {
+                    }
+
+                    if (flight.stdGmt !== undefined) {
+                        contents += '<br/>STD : ' + formatFunctionalDateForTooltip(flight.stdGmt);
+                    }
+                    if (flight.staGmt !== undefined) {
+                        contents += '<br/>STA : ' + formatFunctionalDateForTooltip(flight.staGmt);
+                    }
+
                     if (flight.atdGmt !== undefined) {
                         // contents += '<br/>ATD : ' + flight.atdGmt;
-                        contents += '<br/>ABN : ' + formatFunctionalDateForTooltip(flight.atdGmt);
+                        contents += '<br/>ATOT : ' + formatFunctionalDateForTooltip(flight.atdGmt);
                     } else if (flight.etdGmt !== undefined) {
-                        contents += '<br/>ETD : ' + formatFunctionalDateForTooltip(flight.etdGmt);
+                        contents += '<br/>ETOT : ' + formatFunctionalDateForTooltip(flight.etdGmt);
                     }
 
                     if (flight.ataGmt !== undefined) {
@@ -939,7 +976,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 const height = $plot.outerHeight(true);
                 $plot.css('left', x + offset + width > $win.width() ? x - offset - width : x + offset);
 
-                const currentTop = y + height < winHeight + yOffset ? y : yOffset
+                const currentTop = y + height < winHeight + yOffset ? y : yOffset;
                 $plot.css('top', currentTop);
 
             }
