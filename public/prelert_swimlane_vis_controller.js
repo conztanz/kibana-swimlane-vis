@@ -225,25 +225,25 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             const icaoFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
             const departureStation = icaoObjectId.split('_')[2];
 
-            $scope.lineLabels.set(icaoCarrierCode, $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, icaoCarrierCode, carrierName, carrierCategory));
-            let displayKey = $scope.lineLabels.get(icaoCarrierCode);
+            $scope.lineLabels.set(icaoCarrierCode+ "_" + carrierCategory, $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, icaoCarrierCode, carrierName, carrierCategory));
+            let displayKey = $scope.lineLabels.get(icaoCarrierCode+ "_" + carrierCategory);
 
             if (simFlights[displayKey] === undefined) {
                 simFlights[displayKey] = [];
             }
 
             let bucketFlight = bucket['3'].buckets[0];
-            if (carrierCodesMap[icaoCarrierCode] === undefined) {
+            if (carrierCodesMap[icaoCarrierCode + "_" + carrierCategory] === undefined) {
 
                 // if this carrier code doesn't already exist, we add it
 
-                carrierCodesMap[icaoCarrierCode] = {};
-                carrierCodesMap[icaoCarrierCode].doc_count = 1;
-                carrierCodesMap[icaoCarrierCode]['1'] = {};
-                carrierCodesMap[icaoCarrierCode]['1'].value = bucket['1'].value;
-                carrierCodesMap[icaoCarrierCode]['3'] = {};
-                carrierCodesMap[icaoCarrierCode]['3'].buckets = [];
-                carrierCodesMap[icaoCarrierCode]['3'].buckets.push(bucketFlight);
+                carrierCodesMap[icaoCarrierCode + "_" + carrierCategory] = {};
+                carrierCodesMap[icaoCarrierCode + "_" + carrierCategory].doc_count = 1;
+                carrierCodesMap[icaoCarrierCode + "_" + carrierCategory]['1'] = {};
+                carrierCodesMap[icaoCarrierCode + "_" + carrierCategory]['1'].value = bucket['1'].value;
+                carrierCodesMap[icaoCarrierCode + "_" + carrierCategory]['3'] = {};
+                carrierCodesMap[icaoCarrierCode + "_" + carrierCategory]['3'].buckets = [];
+                carrierCodesMap[icaoCarrierCode + "_" + carrierCategory]['3'].buckets.push(bucketFlight);
 
             } else {
 
@@ -253,14 +253,14 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 let old = false;
                 // if this new flight happens to be at the same time as another one, we'll only add if it has a new "status code"
                 // if it has a smaller "status code", we'll add it to another list that we'll use later in the tool tip
-                _.each(carrierCodesMap[icaoCarrierCode]['3'].buckets, function (current, i) {
+                _.each(carrierCodesMap[icaoCarrierCode + "_" + carrierCategory]['3'].buckets, function (current, i) {
                     if (current.key === bucketFlight.key) {
                         // we have a match (a simultaneous flight)
                         let newFlightMaxStatusCode = bucketFlight['1'].value;
                         let currentFlightMaxStatusCode = current['1'].value;
                         if (newFlightMaxStatusCode > currentFlightMaxStatusCode) {
                             // the new flight has a bigger "status code" ==> we override the already existing one
-                            carrierCodesMap[icaoCarrierCode]['3'].buckets[i] = bucketFlight;
+                            carrierCodesMap[icaoCarrierCode + "_" + carrierCategory]['3'].buckets[i] = bucketFlight;
                             replaced = true;
                         } else {
                             old = true;
@@ -270,12 +270,12 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                     }
                 });
                 if (!replaced && !old) {
-                    carrierCodesMap[icaoCarrierCode]['3'].buckets.push(bucketFlight);
+                    carrierCodesMap[icaoCarrierCode + "_" + carrierCategory]['3'].buckets.push(bucketFlight);
                 }
-                carrierCodesMap[icaoCarrierCode].doc_count++;
+                carrierCodesMap[icaoCarrierCode + "_" + carrierCategory].doc_count++;
             }
 
-            carrierCodesMap[icaoCarrierCode].key = displayKey;
+            carrierCodesMap[icaoCarrierCode + "_" + carrierCategory].key = displayKey;
             bucketFlight.carrierCode = icaoCarrierCode;
             bucketFlight.iataObjectId = iataObjectId;
             bucketFlight.icaoObjectId = icaoObjectId;
