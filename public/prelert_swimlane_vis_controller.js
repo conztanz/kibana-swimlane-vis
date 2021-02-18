@@ -114,6 +114,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
         // return carrierName + '<br>(' + icaoCode
         //     + (iataCarrierCode !== undefined ? '/' + iataCarrierCode : '')
         //     + ')';
+
         return (carrierCategory !== undefined ? carrierCategory + ' - ' : '' ) +
             (iataCarrierCode !== undefined ? iataCarrierCode + ' ' : '') +
             '(' + icaoCode + '-' + carrierName + ')';
@@ -138,6 +139,14 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             const icaoObjectId = splitBucketKey[0];
             const iataObjectId = splitBucketKey[1];
             let carrierName = splitBucketKey[2];
+
+            if(carrierName !== undefined) {
+                // FIX to allow "/" in carrier names
+                // In the scripted field SwimlaneLineDetails, possible problematic "/" in the carrier name have been replaced by "|"
+                // Here we do the inverse operation:
+                carrierName = carrierName.replaceAll("|", "/");
+            }
+
             let iataCarrierCode = splitBucketKey[3];
             let routing = splitBucketKey[4];
             let pnrStatus = 'Scheduled';
@@ -224,6 +233,7 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
             const icaoCarrierCode = icaoObjectId.split('_')[1].slice(0, 3);
             const icaoFlightNumber = icaoObjectId.split('_')[1].slice(3, bucket.key.length);
             const departureStation = icaoObjectId.split('_')[2];
+
 
             $scope.lineLabels.set(icaoCarrierCode+ "_" + carrierCategory, $scope.buildLineLabel(iataCarrierCode, iataFlightNumber, icaoCarrierCode, carrierName, carrierCategory));
             let displayKey = $scope.lineLabels.get(icaoCarrierCode+ "_" + carrierCategory);
