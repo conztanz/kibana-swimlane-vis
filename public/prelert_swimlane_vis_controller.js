@@ -144,7 +144,12 @@ module.controller('PrelertSwimlaneVisController', function ($scope, courier, $ti
                 // FIX to allow "/" in carrier names
                 // In the scripted field SwimlaneLineDetails, possible problematic "/" in the carrier name have been replaced by "|"
                 // Here we do the inverse operation:
-                carrierName = carrierName.replaceAll("|", "/");
+
+                // replaceAll() is not supported before Chrome v85 and Firefox v77 => we have experienced problems
+                // with LUX UIP old browsers (chrome v76 / firefox forbidden on 22/01/2021...)
+                // https://stackoverflow.com/questions/62825358/javascript-replaceall-is-not-a-function-type-error
+                // carrierName = carrierName.replaceAll("|", "/");
+                carrierName = carrierName.replace( "|", "/");
             }
 
             let iataCarrierCode = splitBucketKey[3];
